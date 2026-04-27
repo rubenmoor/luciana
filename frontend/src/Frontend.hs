@@ -26,9 +26,9 @@ frontend = Frontend
   { _frontend_head = do
       el "title" $ text "Obelisk Minimal Example"
       elAttr "script" ("type" =: "application/javascript" <> "src" =: $(static "lib.js")) blank
-      elAttr "link" ("href" =: $(static "main.css") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
+      elAttr "link" ("href" =: $(static "styles.css") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
   , _frontend_body = do
-      el "h1" $ text "Welcome to Obelisk!"
+      elAttr "h1" ("class" =: "text-3xl font-bold text-blue-600") $ text "Welcome to Obelisk!"
       el "p" $ text $ T.pack commonStuff
 
       -- `prerender` and `prerender_` let you choose a widget to run on the server
@@ -40,7 +40,7 @@ frontend = Frontend
         ^. js ("skeleton_lib" :: T.Text)
         ^. js1 ("log" :: T.Text) ("Hello, World!" :: T.Text)
 
-      elAttr "img" ("src" =: $(static "obelisk.jpg")) blank
+      elAttr "img" ("src" =: $(static "images/obelisk.jpg")) blank
       el "div" $ do
         let
           cfg = "common/example"
