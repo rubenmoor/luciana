@@ -1,7 +1,6 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE UndecidableInstances #-}
+-- | DeriveAnyClass / DeriveGeneric: same rationale as Backend.Schema.Session.
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Backend.Schema.PushSubscription
   ( PushSubscriptionT (..)
@@ -12,21 +11,19 @@ module Backend.Schema.PushSubscription
 
 import Backend.Schema.User (UserT)
 import Data.Functor.Identity (Identity)
+import Data.Time (UTCTime)
 import Database.Beam
   ( Beamable
   , C
   , PrimaryKey
-  , SqlSerial
   , Table (PrimaryKey, primaryKey)
   )
+import Database.Beam.Backend.SQL.Types (SqlSerial)
 import Relude
-  ( Eq
-  , Generic
+  ( Generic
   , Int64
   , Maybe
-  , Show
   , Text
-  , UTCTime
   , (.)
   )
 
@@ -52,6 +49,3 @@ instance Table PushSubscriptionT where
     deriving stock (Generic)
     deriving anyclass (Beamable)
   primaryKey = PushSubscriptionId . pushSubscriptionId
-
-deriving stock instance Show PushSubscription
-deriving stock instance Eq PushSubscription

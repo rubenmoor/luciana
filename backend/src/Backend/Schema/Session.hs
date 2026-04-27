@@ -1,7 +1,8 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE UndecidableInstances #-}
+-- | DeriveAnyClass: empty `Beamable` instance is generated from the stock
+-- `Generic`; the alternative is hand-writing `zipBeamFieldsM`.
+-- DeriveGeneric: required by `Beamable`'s default methods.
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Backend.Schema.Session
   ( SessionT (..)
@@ -13,19 +14,17 @@ module Backend.Schema.Session
 import Backend.Schema.User (UserT)
 import Data.ByteString (ByteString)
 import Data.Functor.Identity (Identity)
+import Data.Time (UTCTime)
 import Database.Beam
   ( Beamable
   , C
   , PrimaryKey
-  , SqlSerial
   , Table (PrimaryKey, primaryKey)
   )
+import Database.Beam.Backend.SQL.Types (SqlSerial)
 import Relude
-  ( Eq
-  , Generic
+  ( Generic
   , Int64
-  , Show
-  , UTCTime
   , (.)
   )
 
@@ -48,6 +47,3 @@ instance Table SessionT where
     deriving stock (Generic)
     deriving anyclass (Beamable)
   primaryKey = SessionId . sessionId
-
-deriving stock instance Show Session
-deriving stock instance Eq Session

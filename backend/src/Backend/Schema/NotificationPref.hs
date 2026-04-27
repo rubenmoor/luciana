@@ -1,7 +1,12 @@
+-- | DeriveAnyClass / DeriveGeneric: empty `Beamable` instance from stock
+-- `Generic`. The remaining four extensions are required by the beam SQL
+-- instances for `NotificationMode`: same multi-parameter / Paterson story as
+-- in Backend.Schema.User.
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Backend.Schema.NotificationPref
@@ -16,15 +21,16 @@ module Backend.Schema.NotificationPref
 
 import Backend.Schema.User (UserT)
 import Data.Functor.Identity (Identity)
-import Data.Time (TimeOfDay)
+import Data.Time (TimeOfDay, UTCTime)
 import Database.Beam
   ( Beamable
   , C
   , PrimaryKey
   , Table (PrimaryKey, primaryKey)
   )
-import Database.Beam.Backend.SQL (BeamBackend, HasSqlValueSyntax (sqlValueSyntax))
+import Database.Beam.Backend.SQL (HasSqlValueSyntax (sqlValueSyntax))
 import Database.Beam.Backend.SQL.Row (FromBackendRow (fromBackendRow))
+import Database.Beam.Backend.Types (BeamBackend)
 import Database.Beam.Migrate (HasDefaultSqlDataType (defaultSqlDataType))
 import Database.Beam.Postgres (Postgres)
 import Relude
@@ -38,7 +44,6 @@ import Relude
   , Proxy (Proxy)
   , Show
   , Text
-  , UTCTime
   , ($)
   , (.)
   , (<$>)
@@ -96,6 +101,3 @@ instance Table NotificationPrefT where
     deriving stock (Generic)
     deriving anyclass (Beamable)
   primaryKey = NotificationPrefKey . notificationPrefUserId
-
-deriving stock instance Show NotificationPref
-deriving stock instance Eq NotificationPref

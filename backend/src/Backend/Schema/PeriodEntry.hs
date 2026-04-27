@@ -1,7 +1,6 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE UndecidableInstances #-}
+-- | DeriveAnyClass / DeriveGeneric: same rationale as Backend.Schema.Session.
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Backend.Schema.PeriodEntry
   ( PeriodEntryT (..)
@@ -12,22 +11,19 @@ module Backend.Schema.PeriodEntry
 
 import Backend.Schema.User (UserT)
 import Data.Functor.Identity (Identity)
-import Data.Time (Day)
+import Data.Time (Day, UTCTime)
 import Database.Beam
   ( Beamable
   , C
   , PrimaryKey
-  , SqlSerial
   , Table (PrimaryKey, primaryKey)
   )
+import Database.Beam.Backend.SQL.Types (SqlSerial)
 import Relude
-  ( Eq
-  , Generic
+  ( Generic
   , Int64
   , Maybe
-  , Show
   , Text
-  , UTCTime
   , (.)
   )
 
@@ -51,6 +47,3 @@ instance Table PeriodEntryT where
     deriving stock (Generic)
     deriving anyclass (Beamable)
   primaryKey = PeriodEntryId . periodEntryId
-
-deriving stock instance Show PeriodEntry
-deriving stock instance Eq PeriodEntry

@@ -1,10 +1,11 @@
 name: backend
 version: 0.1
-cabal-version: >= 1.8
+cabal-version: >= 1.10
 build-type: Simple
 
 library
   hs-source-dirs: src
+  default-language: Haskell2010
   if impl(ghcjs)
     buildable: False
   build-depends: base
@@ -20,11 +21,14 @@ library
                , obelisk-route
                , postgresql-simple
                , relude
+               , resource-pool
                , text
                , time
   exposed-modules:
     Backend
+    Backend.Db
     Backend.Schema.Db
+    Backend.Schema.Migration
     Backend.Schema.NotificationPref
     Backend.Schema.PeriodEntry
     Backend.Schema.PushSubscription
@@ -53,6 +57,7 @@ library
 executable backend
   main-is: main.hs
   hs-source-dirs: src-bin
+  default-language: Haskell2010
   default-extensions:
     NoImplicitPrelude
     DataKinds

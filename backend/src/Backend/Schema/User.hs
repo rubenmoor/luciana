@@ -1,7 +1,17 @@
+-- | DeriveAnyClass / DeriveGeneric: empty `Beamable` instances generated from
+-- stock `Generic`. GeneralizedNewtypeDeriving: `deriving newtype (Eq)` on
+-- TZName lifts the underlying Text instance.
+-- The remaining four extensions are required by the orphan beam SQL instances
+-- for `Locale` and `TZName` below: those classes are multi-parameter
+-- (HasSqlValueSyntax, FromBackendRow, HasDefaultSqlDataType) and the instance
+-- heads contain free type variables (e.g. `HasSqlValueSyntax be TZName`),
+-- triggering Paterson conditions that need UndecidableInstances.
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -15,15 +25,17 @@ module Backend.Schema.User
 
 import Common.I18n (Locale, localeFromText, localeToText)
 import Data.Functor.Identity (Identity)
+import Data.Time (UTCTime)
 import Database.Beam
   ( Beamable
   , C
   , PrimaryKey
-  , SqlSerial
   , Table (PrimaryKey, primaryKey)
   )
-import Database.Beam.Backend.SQL (BeamBackend, HasSqlValueSyntax (sqlValueSyntax))
+import Database.Beam.Backend.SQL (HasSqlValueSyntax (sqlValueSyntax))
 import Database.Beam.Backend.SQL.Row (FromBackendRow (fromBackendRow))
+import Database.Beam.Backend.SQL.Types (SqlSerial)
+import Database.Beam.Backend.Types (BeamBackend)
 import Database.Beam.Migrate (HasDefaultSqlDataType (defaultSqlDataType))
 import Database.Beam.Postgres (Postgres)
 import Relude
@@ -35,11 +47,11 @@ import Relude
   , Proxy (Proxy)
   , Show
   , Text
-  , UTCTime
   , ($)
   , (.)
   , (<$>)
   , (<>)
+  , pure
   , toString
   )
 
@@ -63,9 +75,6 @@ instance Table UserT where
     deriving stock (Generic)
     deriving anyclass (Beamable)
   primaryKey = UserId . userId
-
-deriving stock instance Show User
-deriving stock instance Eq User
 
 newtype TZName = TZName { unTZName :: Text }
   deriving stock (Show)

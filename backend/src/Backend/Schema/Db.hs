@@ -1,6 +1,10 @@
+-- | DeriveAnyClass / DeriveGeneric: empty `Database be` instance from stock
+-- `Generic`. FlexibleInstances + MultiParamTypeClasses: `Database` takes two
+-- parameters and `be` is left as a free type variable in the instance head.
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE StandaloneDeriving #-}
 
 module Backend.Schema.Db
   ( LucianaDb (..)

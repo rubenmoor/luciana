@@ -45,7 +45,7 @@
           ${postgres}/bin/createdb "$PGDATABASE"
         fi
         mkdir -p "$LUCIANA_ROOT/config/backend"
-        echo "postgresql:///$PGDATABASE?host=$PGHOST" \
+        echo "postgresql://$PGUSER@/$PGDATABASE?host=$PGHOST" \
           > "$LUCIANA_ROOT/config/backend/db-url"
         if [ "$STARTED_HERE" = "1" ]; then
           ${postgres}/bin/pg_ctl -D "$PGDATA" stop >/dev/null
