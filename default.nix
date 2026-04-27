@@ -20,4 +20,16 @@ project ./. ({ ... }: {
   android.displayName = "Obelisk Minimal Example";
   ios.bundleIdentifier = "systems.obsidian.obelisk.examples.minimal";
   ios.bundleName = "Obelisk Minimal Example";
+  overrides = self: super: {
+    beam-core = self.callHackageDirect {
+      pkg = "beam-core";
+      ver = "0.10.3.0";
+      sha256 = "0di4wi5wdbj8q728kq9q3s6vdj4vczzkv41nzzq0jfa4b7cma14p";
+    } {};
+    beam-migrate = self.callHackageDirect {
+      pkg = "beam-migrate";
+      ver = "0.5.3.0";
+      sha256 = "0bqkqv0ip1sshxc98yc0gx1w8j7xv7yypd1gafz93glvmay2pxi9";
+    } {};
+  };
 })

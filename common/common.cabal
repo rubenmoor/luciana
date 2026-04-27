@@ -11,6 +11,7 @@ library
                , text
   exposed-modules:
     Common.Api
+    Common.I18n
     Common.Route
   default-extensions:
     NoImplicitPrelude

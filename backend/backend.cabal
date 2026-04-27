@@ -8,13 +8,28 @@ library
   if impl(ghcjs)
     buildable: False
   build-depends: base
+               , beam-core
+               , beam-migrate
+               , beam-postgres
+               , bytestring
                , common
+               , containers
                , frontend
                , obelisk-backend
+               , obelisk-executable-config-lookup
                , obelisk-route
+               , postgresql-simple
                , relude
+               , text
+               , time
   exposed-modules:
     Backend
+    Backend.Schema.Db
+    Backend.Schema.NotificationPref
+    Backend.Schema.PeriodEntry
+    Backend.Schema.PushSubscription
+    Backend.Schema.Session
+    Backend.Schema.User
   default-extensions:
     NoImplicitPrelude
     DataKinds
