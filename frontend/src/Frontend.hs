@@ -34,10 +34,11 @@ import Reflex.Dom.Core
   , PostBuild
   , TriggerEvent
   , blank
-  , button
+  , domEvent
   , dyn
   , el
   , elAttr
+  , elAttr'
   , ffor
   , fmapMaybe
   , leftmost
@@ -47,6 +48,7 @@ import Reflex.Dom.Core
   , switchHold
   , text
   , (=:)
+  , EventName (Click)
   )
 import Relude
 
@@ -76,7 +78,27 @@ frontend = Frontend
       pure ()
   }
   where
-    placeholder name = el "h1" $ text $ name <> " (TODO)"
+    placeholder name = page name $ text "TODO"
+
+----------------------------------------------------------------------
+-- Helpers
+
+-- | Render a page with a container and a bold title.
+page :: DomBuilder t m => Text -> m a -> m a
+page title inner = elAttr "main" ("class" =: "container mx-auto p-6") $ do
+  elAttr "h1" ("class" =: "text-3xl font-bold mb-4") $ text title
+  inner
+
+-- | A button element that accepts a CSS class string.
+buttonClass
+  :: DomBuilder t m => Text -> Text -> m (Event t ())
+buttonClass cls label = do
+  (e, _) <- elAttr' "button"
+    ("type" =: "button" <> "class" =: cls)
+    (text label)
+  pure $ domEvent Click e
+
+----------------------------------------------------------------------
 
 gateRoute
   :: ( DomBuilder t m
@@ -99,9 +121,12 @@ topBar
   -> m (Event t ())
 topBar st = do
   evEv <- dyn $ ffor st $ \case
-    AuthSignedIn u -> el "header" $ do
-      el "span" $ text (urEmail u)
-      button "Log out"
+    AuthSignedIn u ->
+      elAttr "div" ("class" =: "navbar bg-base-200 shadow-sm") $ do
+        elAttr "div" ("class" =: "flex-1 px-2 text-lg font-semibold") $ text "Luciana"
+        elAttr "div" ("class" =: "flex-none gap-2") $ do
+          elAttr "span" ("class" =: "text-sm opacity-70") $ text (urEmail u)
+          buttonClass "btn btn-sm btn-ghost" "Log out"
     _ -> pure never
   switchHold never evEv
 
@@ -117,7 +142,11 @@ loginPage
      )
   => m (Event t ())
 loginPage = mdo
-  loginEv <- loginWidget errEv
+  loginEv <-
+    elAttr "div" ("class" =: "min-h-[calc(100vh-4rem)] flex items-center justify-center p-6") $
+      elAttr "div" ("class" =: "card w-full max-w-sm bg-base-100 shadow-md") $
+        elAttr "div" ("class" =: "card-body") $
+          loginWidget errEv
   res     <- performLogin loginEv
   let success = fmapMaybe (either (const Nothing) Just) res
       errEv   = fmapMaybe (either Just (const Nothing)) res
@@ -136,7 +165,11 @@ signupPage
      )
   => m (Event t ())
 signupPage = mdo
-  regEv <- signupWidget errEv
+  regEv <-
+    elAttr "div" ("class" =: "min-h-[calc(100vh-4rem)] flex items-center justify-center p-6") $
+      elAttr "div" ("class" =: "card w-full max-w-sm bg-base-100 shadow-md") $
+        elAttr "div" ("class" =: "card-body") $
+          signupWidget errEv
   res   <- performRegister regEv
   let success = fmapMaybe (either (const Nothing) Just) res
       errEv   = fmapMaybe (either Just (const Nothing)) res
