@@ -3,6 +3,7 @@
 * project overview and goal: `plans/goal.md`
 * structure of the project and how to run: `plans/obelisk.md`
 * haskell conventions: `plans/Haskell.md`
+* general best practices (forms, ids, etc.): `plans/best-practices.md`
 
 # instructions
 

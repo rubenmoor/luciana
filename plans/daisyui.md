@@ -159,10 +159,12 @@ seams; do not refactor structure.
 1. **Headings.** `el "h1"` → `elAttr "h1" ("class" =: "card-title text-2xl mb-2")`.
 
 2. **`labelled` helper.** Restructure to emit daisyUI's `form-control` /
-   `label` / `label-text` structure:
+   `label` / `label-text` structure. The signature also takes a caller-supplied
+   id so the `<label>` is associated with its input via `for=` — see
+   [best-practices.md](best-practices.md#labelled-form-controls):
    ```haskell
-   labelled lbl inner = elAttr "div" ("class" =: "form-control w-full mb-2") $ do
-     elAttr "label" ("class" =: "label") $
+   labelled fieldId lbl inner = elAttr "div" ("class" =: "form-control w-full mb-2") $ do
+     elAttr "label" ("class" =: "label" <> "for" =: fieldId) $
        elAttr "span" ("class" =: "label-text") $ text lbl
      inner
    ```
@@ -174,27 +176,28 @@ seams; do not refactor structure.
    ```
    Same for the password inputs (`"class" =: "input input-bordered w-full"`).
 
-4. **Submit buttons.** Replace `button "Sign in"` / `button "Create account"`
-   with `buttonClass "btn btn-primary w-full mt-2" "Sign in"` (and likewise
-   for signup). Move `buttonClass` into a shared module, or duplicate it here
-   — see "open question" below.
+4. **Form wrapper + submit button.** The fields and submit button are
+   wrapped in a `<form>` via the `formEl` helper, which sets
+   `preventDefault` on the submit event so the browser does not navigate.
+   The submit button is rendered with `submitButtonClass` (emits
+   `type="submit"`) — no separate click event is captured because the form's
+   submit event covers both Enter-to-submit and click. See
+   [best-practices.md](best-practices.md#enter-to-submit-on-forms).
 
 5. **Error line.** `el "p"` → `elAttr "p" ("class" =: "text-error text-sm mt-2 min-h-[1.25rem]")`.
    The `min-h` keeps the layout from jumping when an error appears.
 
-## Open question — where does `buttonClass` live?
+## Where button helpers live
 
-Two reasonable options:
+- `Frontend.hs` keeps `buttonClass` (`type="button"`) for navbar / non-form
+  buttons (e.g. "Log out").
+- `Frontend/Auth/Widget.hs` has `submitButtonClass` (`type="submit"`) for
+  buttons inside a `<form>`. The two helpers are intentionally separate
+  because the button `type` carries semantics: `"submit"` triggers form
+  submission (and Enter-to-submit), `"button"` does not.
 
-- **Keep it in `Frontend.hs`** and add a copy in `Frontend/Auth/Widget.hs`. Two
-  ~6-line copies; no new module.
-- **Add `frontend/src/Frontend/UI.hs`** (or similar) exporting `buttonClass`
-  and `page`, imported from both call sites. Cleaner, but introduces a new
-  module just for two helpers.
-
-Recommendation: start with the duplication and lift to a shared module the
-first time a third call site appears. Avoids premature abstraction; the
-helpers are small. Decide before implementing.
+If a third call site appears for either helper, lift it to a shared module
+(`Frontend/UI.hs`). Until then, the duplication is cheaper than the module.
 
 ## Verification
 
