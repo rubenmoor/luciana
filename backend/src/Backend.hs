@@ -1,6 +1,7 @@
 module Backend where
 
 import Backend.Api (serveBackendRoute)
+import Backend.Auth (forkSessionCleanup, mkAuthEnv)
 import Backend.Db (loadDbUrl, withDbPool)
 import Backend.Schema.Migration (readMigrationMode, runMigrations)
 import Common.Route (BackendRoute, FrontendRoute, fullRouteEncoder)
@@ -14,6 +15,8 @@ backend = Backend
       mode <- readMigrationMode
       withDbPool url $ \pool -> do
         runMigrations pool mode
-        serve serveBackendRoute
+        env <- mkAuthEnv pool
+        _   <- forkSessionCleanup env
+        serve (serveBackendRoute env)
   , _backend_routeEncoder = fullRouteEncoder
   }

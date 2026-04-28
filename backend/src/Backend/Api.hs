@@ -5,6 +5,13 @@ module Backend.Api
   ( serveBackendRoute
   ) where
 
+import Backend.Auth
+  ( AuthEnv
+  , handleLogin
+  , handleLogout
+  , handleMe
+  , handleRegister
+  )
 import Common.Route
   ( ApiRoute (..)
   , AuthRoute (..)
@@ -17,25 +24,25 @@ import Obelisk.Route (R, pattern (:/))
 import Relude
 import Snap.Core (Snap)
 
-serveBackendRoute :: R BackendRoute -> Snap ()
-serveBackendRoute (br :/ v) = case br of
+serveBackendRoute :: AuthEnv -> R BackendRoute -> Snap ()
+serveBackendRoute env (br :/ v) = case br of
   BackendRoute_Missing -> pure ()
   BackendRoute_Vapid   -> pure ()
-  BackendRoute_Api     -> serveApiRoute v
+  BackendRoute_Api     -> serveApiRoute env v
 
-serveApiRoute :: R ApiRoute -> Snap ()
-serveApiRoute (ar :/ v) = case ar of
-  ApiRoute_Auth          -> serveAuthRoute v
+serveApiRoute :: AuthEnv -> R ApiRoute -> Snap ()
+serveApiRoute env (ar :/ v) = case ar of
+  ApiRoute_Auth          -> serveAuthRoute env v
   ApiRoute_Period        -> servePeriodRoute v
   ApiRoute_Notifications -> serveNotificationsRoute v
   ApiRoute_Push          -> servePushRoute v
 
-serveAuthRoute :: R AuthRoute -> Snap ()
-serveAuthRoute (ar :/ _) = case ar of
-  AuthRoute_Register -> pure ()
-  AuthRoute_Login    -> pure ()
-  AuthRoute_Logout   -> pure ()
-  AuthRoute_Me       -> pure ()
+serveAuthRoute :: AuthEnv -> R AuthRoute -> Snap ()
+serveAuthRoute env (ar :/ _) = case ar of
+  AuthRoute_Register -> handleRegister env
+  AuthRoute_Login    -> handleLogin env
+  AuthRoute_Logout   -> handleLogout env
+  AuthRoute_Me       -> handleMe env
 
 servePeriodRoute :: R PeriodRoute -> Snap ()
 servePeriodRoute (pr :/ _) = case pr of

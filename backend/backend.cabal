@@ -9,13 +9,19 @@ library
   if impl(ghcjs)
     buildable: False
   build-depends: base
+               , aeson
+               , base64-bytestring
+               , bcrypt
                , beam-core
                , beam-migrate
                , beam-postgres
                , bytestring
                , common
                , containers
+               , cookie
+               , cryptonite
                , frontend
+               , memory
                , obelisk-backend
                , obelisk-executable-config-lookup
                , obelisk-route
@@ -25,9 +31,14 @@ library
                , snap-core
                , text
                , time
+               , unordered-containers
   exposed-modules:
     Backend
     Backend.Api
+    Backend.Auth
+    Backend.Auth.Cookie
+    Backend.Auth.RateLimit
+    Backend.Auth.Session
     Backend.Db
     Backend.Schema.Db
     Backend.Schema.Migration
