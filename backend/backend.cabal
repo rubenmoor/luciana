@@ -22,10 +22,12 @@ library
                , postgresql-simple
                , relude
                , resource-pool
+               , snap-core
                , text
                , time
   exposed-modules:
     Backend
+    Backend.Api
     Backend.Db
     Backend.Schema.Db
     Backend.Schema.Migration

@@ -1,5 +1,6 @@
 module Backend where
 
+import Backend.Api (serveBackendRoute)
 import Backend.Db (loadDbUrl, withDbPool)
 import Backend.Schema.Migration (readMigrationMode, runMigrations)
 import Common.Route (BackendRoute, FrontendRoute, fullRouteEncoder)
@@ -13,6 +14,6 @@ backend = Backend
       mode <- readMigrationMode
       withDbPool url $ \pool -> do
         runMigrations pool mode
-        serve $ const (pure ())
+        serve serveBackendRoute
   , _backend_routeEncoder = fullRouteEncoder
   }
