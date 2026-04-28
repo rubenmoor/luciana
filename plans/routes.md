@@ -4,6 +4,8 @@ Status: partial
 
 URL routing for Luciana. All routes — frontend pages and backend API — are defined in [`common/src/Common/Route.hs`](../common/src/Common/Route.hs) so the backend dispatches by the same types the frontend navigates with.
 
+Module layout for the code that implements a route is in [`route-modules.md`](route-modules.md).
+
 Today the file holds only the Obelisk scaffold (`BackendRoute_Missing`, `FrontendRoute_Main`). This plan specifies the target shape; nothing here is implemented yet.
 
 Note: `obelisk-route` encodes only the **path** (and optionally query). Request bodies (JSON) are not part of the route value — they're parsed in handlers using `aeson`.

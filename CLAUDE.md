@@ -16,6 +16,7 @@ behaviour (`spec` / `partial` / `implemented` / `reference`).
 | [obelisk.md](plans/obelisk.md) | reference | `ob` CLI, thunks, build commands, config dirs |
 | [dev-environment.md](plans/dev-environment.md) | reference | Local Postgres, env vars, direnv |
 | [Haskell.md](plans/Haskell.md) | reference | Prelude (relude), default extensions, cabal stanza rules |
+| [route-modules.md](plans/route-modules.md) | reference | One module, one function — convention for route handlers |
 | [ui-best-practices.md](plans/ui-best-practices.md) | reference | UI tasks only — form labels, ids, Enter-to-submit |
 | [visual-design.md](plans/visual-design.md) | reference | Color tokens, layout primitives |
 | [tailwind.md](plans/tailwind.md) | reference | Tailwind build pipeline |
