@@ -1,5 +1,7 @@
 # routes.md
 
+Status: partial
+
 URL routing for Luciana. All routes — frontend pages and backend API — are defined in [`common/src/Common/Route.hs`](../common/src/Common/Route.hs) so the backend dispatches by the same types the frontend navigates with.
 
 Today the file holds only the Obelisk scaffold (`BackendRoute_Missing`, `FrontendRoute_Main`). This plan specifies the target shape; nothing here is implemented yet.

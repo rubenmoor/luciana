@@ -1,5 +1,7 @@
 # daisyUI integration
 
+Status: reference
+
 Add the [daisyUI](https://daisyui.com) Tailwind plugin and apply its component
 classes to the existing UI (top bar, login/signup forms, placeholder pages) so
 the app renders with a coherent default look immediately after this plan is
@@ -161,7 +163,7 @@ seams; do not refactor structure.
 2. **`labelled` helper.** Restructure to emit daisyUI's `form-control` /
    `label` / `label-text` structure. The signature also takes a caller-supplied
    id so the `<label>` is associated with its input via `for=` — see
-   [best-practices.md](best-practices.md#labelled-form-controls):
+   [ui-best-practices.md](ui-best-practices.md#labelled-form-controls):
    ```haskell
    labelled fieldId lbl inner = elAttr "div" ("class" =: "form-control w-full mb-2") $ do
      elAttr "label" ("class" =: "label" <> "for" =: fieldId) $
@@ -182,7 +184,7 @@ seams; do not refactor structure.
    The submit button is rendered with `submitButtonClass` (emits
    `type="submit"`) — no separate click event is captured because the form's
    submit event covers both Enter-to-submit and click. See
-   [best-practices.md](best-practices.md#enter-to-submit-on-forms).
+   [ui-best-practices.md](ui-best-practices.md#enter-to-submit-on-forms).
 
 5. **Error line.** `el "p"` → `elAttr "p" ("class" =: "text-error text-sm mt-2 min-h-[1.25rem]")`.
    The `min-h` keeps the layout from jumping when an error appears.

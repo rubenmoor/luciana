@@ -1,5 +1,7 @@
 # Tailwind CSS Integration
 
+Status: reference
+
 Mirrors [obsidiansystems/obelisk-tailwind-example](https://github.com/obsidiansystems/obelisk-tailwind-example).
 
 The Tailwind CLI is run inside a Nix derivation that is wired into Obelisk via

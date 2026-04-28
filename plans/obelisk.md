@@ -1,5 +1,7 @@
 # obelisk.md
 
+Status: reference
+
 ## Build & Development
 
 This is an **Obelisk** (Haskell) project using Nix. The `ob` CLI is the primary development tool.

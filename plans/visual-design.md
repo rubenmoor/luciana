@@ -1,5 +1,7 @@
 # Visual Design
 
+Status: reference
+
 ## Target devices
 
 Luciana is primarily an app, so visual design targets small devices first

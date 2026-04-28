@@ -1,5 +1,7 @@
 # authentication.md
 
+Status: implemented
+
 Email + password authentication with server-side sessions. Multi-user from day one (per `goal.md` § Basic features). Schema lives in [`schema.md`](schema.md); library choices in [`architecture.md`](architecture.md).
 
 ## Scope

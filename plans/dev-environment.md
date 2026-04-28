@@ -1,5 +1,7 @@
 # dev-environment.md
 
+Status: reference
+
 Local development services. Today: Postgres only.
 
 ## Postgres

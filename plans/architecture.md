@@ -1,5 +1,7 @@
 # architecture.md
 
+Status: spec
+
 This is a progressive web app:
 
 * a web server with postgres database

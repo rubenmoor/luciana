@@ -1,5 +1,7 @@
 # schema.md
 
+Status: partial
+
 Postgres schema for the Luciana backend. Mirrored in Haskell as `beam` records under `Backend.Schema` (one module per table) and assembled into a single `LucianaDb` database value. Migrations are produced by `beam-migrate` from this schema.
 
 Conventions:

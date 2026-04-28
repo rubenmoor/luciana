@@ -1,5 +1,7 @@
 # Initializing a New Obelisk (Obsidian Systems) Web App
 
+Status: reference
+
 > Audience: Haskell developers familiar with Nix.
 
 ---

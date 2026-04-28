@@ -1,5 +1,7 @@
 # What the app does
 
+Status: spec
+
 * the user is a female who wants to keep track of her period
 * the user puts in a date when the period first arrived
     * some initial date is set when the app is first opened

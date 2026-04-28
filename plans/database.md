@@ -1,5 +1,7 @@
 # database.md
 
+Status: partial
+
 How the backend connects to Postgres at runtime, and how schema migrations get applied. The schema itself (tables, columns, Haskell mirror) lives in `schema.md`; this file is about the runtime/migration plumbing.
 
 ---
