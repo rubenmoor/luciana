@@ -9,7 +9,8 @@ module Backend.Auth
   , mkAuthEnv
   , forkSessionCleanup
   , requireUser
-  , issueAndSetSession
+  , setSessionCookie
+  , loadUserResponse
   , generateToken
   , hashToken
   , parseJsonBody
@@ -27,6 +28,9 @@ import Backend.Auth.Session
   , lookupSession
   )
 import Backend.Db (DbPool, withConn)
+import Common.Auth (UserResponse (UserResponse))
+import Common.I18n (localeFromText)
+import Database.PostgreSQL.Simple (Only (Only), query)
 import Control.Concurrent (ThreadId, forkIO, threadDelay)
 import qualified Crypto.Hash as Hash
 import qualified Crypto.Random.Entropy as Entropy
@@ -124,9 +128,12 @@ requireUser env = do
 
 ----------------------------------------------------------------------
 -- Session issuance (shared by Register and Login)
+--
+-- Sets the session cookie only; the caller writes the JSON response
+-- body (and Snap defaults to 200 OK).
 
-issueAndSetSession :: AuthEnv -> Int64 -> Snap ()
-issueAndSetSession env uid = do
+setSessionCookie :: AuthEnv -> Int64 -> Snap ()
+setSessionCookie env uid = do
   tok <- liftIO generateToken
   now <- liftIO getCurrentTime
   let expiresAt = newExpiry now
@@ -135,7 +142,21 @@ issueAndSetSession env uid = do
     createSession c uid h expiresAt
   modifyResponse $ addHeader "Set-Cookie"
     (issueCookieHeader (aeCookieSecure env) tok)
-  modifyResponse $ setResponseStatus 204 "No Content"
+
+----------------------------------------------------------------------
+-- User lookup (shared by Login, Register, Me)
+
+loadUserResponse :: DbPool -> Int64 -> IO (Maybe UserResponse)
+loadUserResponse pool uid = withConn pool $ \c -> do
+  rows <- query c
+    "SELECT id, username, locale, timezone FROM users WHERE id = ?"
+    (Only uid)
+    :: IO [(Int64, Text, Text, Text)]
+  pure $ case rows of
+    [(i, u, l, t)] -> case localeFromText l of
+      Just loc -> Just (UserResponse i u loc t)
+      Nothing  -> Nothing
+    _ -> Nothing
 
 ----------------------------------------------------------------------
 -- Snap helpers

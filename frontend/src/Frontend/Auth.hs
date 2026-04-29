@@ -14,7 +14,13 @@ module Frontend.Auth
   , getTimezone
   ) where
 
-import Common.Auth (LoginRequest, RegisterRequest, UserResponse)
+import Common.Auth
+  ( LoginRequest
+  , LoginResult (InvalidCredentials, LoginOk)
+  , RegisterRequest
+  , RegisterResult (RegisterOk, UsernameTaken)
+  , UserResponse
+  )
 import Common.Route
   ( ApiRoute (ApiRoute_Auth)
   , AuthRoute (AuthRoute_Login, AuthRoute_Logout, AuthRoute_Me, AuthRoute_Register)
@@ -97,9 +103,12 @@ meRequest = XhrRequest "GET"
 ----------------------------------------------------------------------
 -- performLogin / performRegister / performLogout
 --
--- Each returns @Either Text ()@ where @Left@ carries a human-readable
--- error string from the response status text and @Right ()@ indicates
--- HTTP success (2xx).
+-- Login/Register decode the typed JSON result from the response body
+-- and translate it to @Either Text UserResponse@. Application-level
+-- outcomes (invalid credentials, username taken) become @Left@ with a
+-- localised message; @429@ becomes a rate-limit message; other HTTP
+-- non-2xx and decode failures fall through to a generic "unexpected"
+-- branch.
 
 performLogin
   :: ( PerformEvent t m
@@ -107,11 +116,20 @@ performLogin
      , MonadJSM (Performable m)
      )
   => Event t LoginRequest
-  -> m (Event t (Either Text ()))
+  -> m (Event t (Either Text UserResponse))
 performLogin reqEv = do
   let url = apiUrl (BackendRoute_Api :/ ApiRoute_Auth :/ AuthRoute_Login :/ ())
   resp <- performRequestAsync (postJson url <$> reqEv)
-  pure (statusToEither <$> resp)
+  pure (decodeLogin <$> resp)
+
+decodeLogin :: XhrResponse -> Either Text UserResponse
+decodeLogin r
+  | _xhrResponse_status r == 429 = Left "Too many attempts — try again later"
+  | not (statusOk r) = Left (unexpected r)
+  | otherwise = case decodeXhrResponse r of
+      Just (LoginOk u)        -> Right u
+      Just InvalidCredentials -> Left "Invalid username or password"
+      Nothing                 -> Left (unexpected r)
 
 performRegister
   :: ( PerformEvent t m
@@ -119,11 +137,20 @@ performRegister
      , MonadJSM (Performable m)
      )
   => Event t RegisterRequest
-  -> m (Event t (Either Text ()))
+  -> m (Event t (Either Text UserResponse))
 performRegister reqEv = do
   let url = apiUrl (BackendRoute_Api :/ ApiRoute_Auth :/ AuthRoute_Register :/ ())
   resp <- performRequestAsync (postJson url <$> reqEv)
-  pure (statusToEither <$> resp)
+  pure (decodeRegister <$> resp)
+
+decodeRegister :: XhrResponse -> Either Text UserResponse
+decodeRegister r
+  | _xhrResponse_status r == 429 = Left "Too many attempts — try again later"
+  | not (statusOk r) = Left (unexpected r)
+  | otherwise = case decodeXhrResponse r of
+      Just (RegisterOk u) -> Right u
+      Just UsernameTaken  -> Left "Username already taken"
+      Nothing             -> Left (unexpected r)
 
 performLogout
   :: ( PerformEvent t m
@@ -141,19 +168,11 @@ logoutRequest = XhrRequest "POST"
   (apiUrl (BackendRoute_Api :/ ApiRoute_Auth :/ AuthRoute_Logout :/ ()))
   def
 
-statusToEither :: XhrResponse -> Either Text ()
-statusToEither r =
-  let s = _xhrResponse_status r
-  in if s >= 200 && s < 300
-       then Right ()
-       else Left (statusErr s)
+statusOk :: XhrResponse -> Bool
+statusOk r = let s = _xhrResponse_status r in s >= 200 && s < 300
 
-statusErr :: Word -> Text
-statusErr 401 = "Invalid username or password"
-statusErr 409 = "Username already taken"
-statusErr 429 = "Too many attempts — try again later"
-statusErr 400 = "Bad request"
-statusErr s   = "Unexpected error (" <> show s <> ")"
+unexpected :: XhrResponse -> Text
+unexpected r = "Unexpected error (" <> show (_xhrResponse_status r) <> ")"
 
 ----------------------------------------------------------------------
 -- requireSignedIn: render @inner@ when signed in, redirect to /login

@@ -7,13 +7,16 @@ import Backend.Auth
   , aePool
   , aeRateLimiter
   , errorStatus
-  , issueAndSetSession
+  , loadUserResponse
   , parseJsonBody
+  , setSessionCookie
+  , writeJson
   )
 import Backend.Auth.RateLimit (checkAndConsume, reset)
 import Backend.Db (withConn)
 import Common.Auth
   ( LoginRequest (lrPassword, lrUsername)
+  , LoginResult (InvalidCredentials, LoginOk)
   , Username
   , unPassword
   , unUsername
@@ -39,15 +42,21 @@ handler env = method POST $ do
     Just req -> do
       let key = (ip, T.toLower (unUsername (lrUsername req)))
       rateOk <- liftIO $ checkAndConsume (aeRateLimiter env) key
-      unless rateOk $ errorStatus 429 "Too Many Requests"
-      mAuth <- liftIO $ withConn (aePool env) $ \c ->
-        lookupUserForLogin c (lrUsername req)
-      case mAuth of
-        Just (uid, hashed)
-          | verifyPassword (unPassword (lrPassword req)) hashed -> do
-              liftIO $ reset (aeRateLimiter env) key
-              issueAndSetSession env uid
-        _ -> errorStatus 401 "Unauthorized"
+      if not rateOk
+        then errorStatus 429 "Too Many Requests"
+        else do
+          mAuth <- liftIO $ withConn (aePool env) $ \c ->
+            lookupUserForLogin c (lrUsername req)
+          case mAuth of
+            Just (uid, hashed)
+              | verifyPassword (unPassword (lrPassword req)) hashed -> do
+                  liftIO $ reset (aeRateLimiter env) key
+                  setSessionCookie env uid
+                  mUr <- liftIO $ loadUserResponse (aePool env) uid
+                  case mUr of
+                    Just ur -> writeJson (LoginOk ur)
+                    Nothing -> errorStatus 500 "Internal Server Error"
+            _ -> writeJson InvalidCredentials
 
 verifyPassword :: Text -> Text -> Bool
 verifyPassword pw hashed =

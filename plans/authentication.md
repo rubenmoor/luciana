@@ -73,10 +73,23 @@ Extend `Common.Route.BackendRoute` with an `Auth` sub-route. Signatures (subject
 
 | Route | Method | Body | Response |
 |---|---|---|---|
-| `auth/register` | POST | `{ username, password, locale, timezone }` | `204` + `Set-Cookie`, or `409` if username taken |
-| `auth/login` | POST | `{ username, password }` | `204` + `Set-Cookie`, or `401` |
+| `auth/register` | POST | `{ username, password, locale, timezone }` | `200 RegisterResult` (+ `Set-Cookie` on `Ok`), `429` if rate-limited |
+| `auth/login` | POST | `{ username, password }` | `200 LoginResult` (+ `Set-Cookie` on `Ok`), `429` if rate-limited |
 | `auth/logout` | POST | — | `204`, clears cookie |
-| `auth/me` | GET | — | `{ id, username, locale, timezone }` or `401` |
+| `auth/me` | GET | — | `200 { id, username, locale, timezone }` or `401` (no / expired session) |
+
+Application-level outcomes — invalid credentials, username taken — are
+encoded as JSON in the response body, not HTTP status codes. Rate
+limiting, by contrast, is an HTTP-level concern and surfaces as `429
+Too Many Requests` with no body. Other non-2xx: `400` for malformed
+JSON, `401` only on `auth/me` (the missing-session case the frontend
+already treats as `AuthAnon`), `5xx` for server errors.
+
+```haskell
+-- Common.Auth
+data LoginResult    = LoginOk UserResponse | InvalidCredentials
+data RegisterResult = RegisterOk UserResponse | UsernameTaken
+```
 
 `timezone` on register comes from `Intl.DateTimeFormat().resolvedOptions().timeZone` on the client. Refreshed on every successful login (UPDATE `users.timezone`) so device travel is picked up without a separate endpoint.
 
@@ -100,7 +113,8 @@ API handlers that need authentication call `requireUser` first and receive the `
 
 In-memory token bucket keyed by `(remoteAddr, username)`:
 
-- 5 failed login attempts per 15 minutes per key → respond `429 Too Many Requests`.
+- 5 failed login attempts per 15 minutes per key → respond with `429
+  Too Many Requests` (empty body).
 - Successful login resets the bucket.
 - Plain `IORef (HashMap (Text, Text) Bucket)` behind an MVar is fine at our scale; revisit if we ever run multiple backend instances (would move to Postgres or Redis).
 
@@ -142,7 +156,8 @@ each route gets its own module exporting `handler` (backend) or `page`
 
 ```
 common/src/Common/
-├── Auth.hs              -- Username, Password (newtypes with smart constructors), AuthError
+├── Auth.hs              -- Username, Password (newtypes with smart constructors),
+│                           LoginResult, RegisterResult
 └── Route.hs             -- + AuthRoute sub-route
 
 backend/src/Backend/

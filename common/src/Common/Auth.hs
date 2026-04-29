@@ -9,6 +9,8 @@ module Common.Auth
   , RegisterRequest (..)
   , LoginRequest (..)
   , UserResponse (..)
+  , LoginResult (..)
+  , RegisterResult (..)
   ) where
 
 import Common.I18n (Locale)
@@ -52,9 +54,6 @@ mkPassword raw =
 data AuthError
   = InvalidUsername
   | InvalidPassword
-  | UsernameTaken
-  | BadCredentials
-  | RateLimited
   deriving stock (Eq, Show)
 
 data RegisterRequest = RegisterRequest
@@ -133,3 +132,43 @@ instance FromJSON UserResponse where
       <*> o .: "username"
       <*> o .: "locale"
       <*> o .: "timezone"
+
+-- | Outcome of @POST /api/auth/login@. Application-level outcomes ride
+-- inside the JSON body; rate limiting is signalled at the HTTP layer
+-- with @429@. See @plans/authentication.md@ § Routes.
+data LoginResult
+  = LoginOk UserResponse
+  | InvalidCredentials
+  deriving stock (Eq, Show)
+
+instance ToJSON LoginResult where
+  toJSON = \case
+    LoginOk u          -> object ["result" .= ("ok" :: Text), "user" .= u]
+    InvalidCredentials -> object ["result" .= ("invalid_credentials" :: Text)]
+
+instance FromJSON LoginResult where
+  parseJSON = withObject "LoginResult" $ \o -> do
+    r <- o .: "result"
+    case (r :: Text) of
+      "ok"                  -> LoginOk <$> o .: "user"
+      "invalid_credentials" -> pure InvalidCredentials
+      other                 -> fail ("unknown LoginResult: " <> toString other)
+
+-- | Outcome of @POST /api/auth/register@.
+data RegisterResult
+  = RegisterOk UserResponse
+  | UsernameTaken
+  deriving stock (Eq, Show)
+
+instance ToJSON RegisterResult where
+  toJSON = \case
+    RegisterOk u  -> object ["result" .= ("ok" :: Text), "user" .= u]
+    UsernameTaken -> object ["result" .= ("username_taken" :: Text)]
+
+instance FromJSON RegisterResult where
+  parseJSON = withObject "RegisterResult" $ \o -> do
+    r <- o .: "result"
+    case (r :: Text) of
+      "ok"             -> RegisterOk <$> o .: "user"
+      "username_taken" -> pure UsernameTaken
+      other            -> fail ("unknown RegisterResult: " <> toString other)

@@ -64,10 +64,10 @@ page = mdo
         elAttr "div" ("class" =: "card-body") $
           loginWidget errEv
   res <- performLogin loginEv
-  let success = fmapMaybe (either (const Nothing) Just) res
-      errEv   = fmapMaybe (either Just (const Nothing)) res
-  setRoute ((FrontendRoute_Home :/ ()) <$ success)
-  pure success
+  let okEv  = fmapMaybe (either (const Nothing) Just) res
+      errEv = fmapMaybe (either Just (const Nothing)) res
+  setRoute ((FrontendRoute_Home :/ ()) <$ okEv)
+  pure (() <$ okEv)
 
 loginWidget
   :: ( DomBuilder t m

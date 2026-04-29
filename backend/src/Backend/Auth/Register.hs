@@ -10,13 +10,16 @@ import Backend.Auth
   , aePool
   , aeRateLimiter
   , errorStatus
-  , issueAndSetSession
+  , loadUserResponse
   , parseJsonBody
+  , setSessionCookie
+  , writeJson
   )
 import Backend.Auth.RateLimit (checkAndConsume)
 import Backend.Db (withConn)
 import Common.Auth
   ( RegisterRequest (rrLocale, rrPassword, rrTimezone, rrUsername)
+  , RegisterResult (RegisterOk, UsernameTaken)
   , Username
   , unPassword
   , unUsername
@@ -44,11 +47,13 @@ handler :: AuthEnv -> Snap ()
 handler env = method POST $ do
   ip     <- getsRequest (decodeUtf8 . rqClientAddr)
   rateOk <- liftIO $ checkAndConsume (aeRateLimiter env) (ip, "register")
-  unless rateOk $ errorStatus 429 "Too Many Requests"
-  mReq <- parseJsonBody
-  case mReq of
-    Nothing  -> errorStatus 400 "Bad Request"
-    Just req -> doRegister env req
+  if not rateOk
+    then errorStatus 429 "Too Many Requests"
+    else do
+      mReq <- parseJsonBody
+      case mReq of
+        Nothing  -> errorStatus 400 "Bad Request"
+        Just req -> doRegister env req
 
 doRegister :: AuthEnv -> RegisterRequest -> Snap ()
 doRegister env req = do
@@ -61,9 +66,14 @@ doRegister env req = do
       result <- liftIO (try @SqlError act)
       case result of
         Left e
-          | sqlState e == "23505" -> errorStatus 409 "Username Taken"
+          | sqlState e == "23505" -> writeJson UsernameTaken
           | otherwise             -> errorStatus 500 "Internal Server Error"
-        Right uid -> issueAndSetSession env uid
+        Right uid -> do
+          setSessionCookie env uid
+          mUr <- liftIO $ loadUserResponse (aePool env) uid
+          case mUr of
+            Just ur -> writeJson (RegisterOk ur)
+            Nothing -> errorStatus 500 "Internal Server Error"
 
 hashPassword :: Text -> IO (Maybe Text)
 hashPassword pw = do

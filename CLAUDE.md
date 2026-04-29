@@ -37,14 +37,18 @@ backend/src/Backend/Schema/   User.hs, Session.hs, PeriodEntry.hs,
                               PushSubscription.hs, NotificationPref.hs,
                               Db.hs, Migration.hs
 common/src/Common/            Route.hs, Auth.hs, Api.hs, I18n.hs
-frontend/src/Frontend/        Frontend.hs, Auth.hs, Login.hs, Signup.hs
+frontend/src/Frontend/        Frontend.hs, Api.hs, Auth.hs, Login.hs, Signup.hs
 frontend/src/Frontend/Widget/ Form.hs
 ```
 
 ## Cross-cutting conventions
 
-- Routes: `FrontendRoute_X`, `BackendRoute_X`, `ApiRoute_X`, then per-area
-  `AuthRoute` / `PeriodRoute` / `NotificationsRoute` / `PushRoute`.
+- Routes: defined once in [`common/src/Common/Route.hs`](common/src/Common/Route.hs);
+  full URL table and the type-safe API-call convention (no string URLs in
+  `frontend/` — render via `Frontend.Api.apiUrl`) live in
+  [`routes.md`](plans/routes.md). Naming: `FrontendRoute_X`, `BackendRoute_X`,
+  `ApiRoute_X`, then per-area `AuthRoute` / `PeriodRoute` /
+  `NotificationsRoute` / `PushRoute`.
 - Schema: one `Backend.Schema.X` module per table; `LucianaDb` lives in
   `Backend.Schema.Db`.
 - Prelude: `relude` everywhere; explicit import lists except `import Relude`.
