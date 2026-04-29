@@ -21,12 +21,14 @@ library
                , reflex-dom-core
                , relude
                , text
+               , time
   exposed-modules:
     Frontend
     Frontend.Api
     Frontend.Auth
     Frontend.Login
     Frontend.Signup
+    Frontend.Toast
     Frontend.Widget.Form
     Frontend.Widget.Icon
   default-extensions:

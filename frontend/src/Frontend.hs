@@ -7,7 +7,7 @@
 
 module Frontend where
 
-import Common.Auth (UserResponse (urUsername))
+import Common.Auth (UserResponse (urLocale, urUsername))
 import Common.Route (FrontendRoute (..))
 import Frontend.Auth
   ( AuthState (AuthSignedIn)
@@ -17,12 +17,19 @@ import Frontend.Auth
   )
 import qualified Frontend.Login as Login
 import qualified Frontend.Signup as Signup
+import Frontend.Toast
+  ( Toast (ToastSuccess)
+  , ToastMsg (MsgLoggedOut)
+  , renderToasts
+  , tellToast
+  , toastLocale
+  )
 import Frontend.Widget.Form (buttonClass)
 import Frontend.Widget.Icon (iconArrowLeftStartOnRectangle)
 import Obelisk.Frontend (Frontend (Frontend, _frontend_body, _frontend_head))
 import Obelisk.Generated.Static (static)
 import Obelisk.Route (R, pattern (:/))
-import Obelisk.Route.Frontend (SetRoute, setRoute, subRoute)
+import Obelisk.Route.Frontend (SetRoute, mapRoutedT, setRoute, subRoute)
 import Reflex.Dom.Core
   ( DomBuilder
   , Dynamic
@@ -37,6 +44,7 @@ import Reflex.Dom.Core
   , leftmost
   , never
   , prerender_
+  , runEventWriterT
   , switchDyn
   , switchHold
   , text
@@ -53,21 +61,28 @@ frontend = Frontend
        <> "type" =: "text/css"
        <> "rel"  =: "stylesheet"
         ) blank
-  , _frontend_body = prerender_ blank $ mdo
-      authStateD    <- currentAuth refreshEv
-      logoutClickEv <- topBar authStateD
-      logoutDoneEv  <- performLogout logoutClickEv
-      setRoute ((FrontendRoute_Login :/ ()) <$ logoutDoneEv)
-      pageEvDyn <- subRoute $ \case
-        FrontendRoute_Home     -> gateRoute authStateD (placeholder "Home")
-        FrontendRoute_Calendar -> gateRoute authStateD (placeholder "Calendar")
-        FrontendRoute_History  -> gateRoute authStateD (placeholder "History")
-        FrontendRoute_Settings -> gateRoute authStateD (placeholder "Settings")
-        FrontendRoute_Login    -> Login.page
-        FrontendRoute_Signup   -> Signup.page
-      let pageEv    = switchDyn pageEvDyn
-          refreshEv = leftmost [logoutDoneEv, pageEv]
-      pure ()
+  , _frontend_body = prerender_ blank $ do
+      (authStateD, toastsEv) <- mapRoutedT runEventWriterT $ mdo
+        authStateD    <- currentAuth refreshEv
+        logoutClickEv <- topBar authStateD
+        logoutDoneEv  <- performLogout logoutClickEv
+        tellToast (ToastSuccess MsgLoggedOut <$ logoutDoneEv)
+        setRoute ((FrontendRoute_Login :/ ()) <$ logoutDoneEv)
+        pageEvDyn <- subRoute $ \case
+          FrontendRoute_Home     -> gateRoute authStateD (placeholder "Home")
+          FrontendRoute_Calendar -> gateRoute authStateD (placeholder "Calendar")
+          FrontendRoute_History  -> gateRoute authStateD (placeholder "History")
+          FrontendRoute_Settings -> gateRoute authStateD (placeholder "Settings")
+          FrontendRoute_Login    -> Login.page
+          FrontendRoute_Signup   -> Signup.page
+        let pageEv    = switchDyn pageEvDyn
+            refreshEv = leftmost [logoutDoneEv, pageEv]
+        pure authStateD
+      let userLocaleD = ffor authStateD $ \case
+            AuthSignedIn u -> Just (urLocale u)
+            _              -> Nothing
+      localeD <- toastLocale userLocaleD
+      renderToasts localeD toastsEv
   }
   where
     placeholder name = page name $ text "TODO"

@@ -14,7 +14,8 @@ import Common.I18n (Locale (LocaleEn))
 import Common.Route (FrontendRoute (FrontendRoute_Home, FrontendRoute_Login))
 import Control.Lens ((.~))
 import Control.Monad.Fix (MonadFix)
-import Frontend.Auth (getTimezone, performRegister)
+import Frontend.Auth (RegisterError (..), getTimezone, performRegister)
+import Frontend.Toast (Toast (..), ToastMsg (..), tellToast)
 import Frontend.Widget.Form (formEl, labelled, submitButtonClass)
 import Frontend.Widget.Icon (iconUserPlus)
 import Language.Javascript.JSaddle (MonadJSM)
@@ -23,6 +24,7 @@ import Obelisk.Route.Frontend (RouteToUrl, SetRoute, routeLink, setRoute)
 import Reflex.Dom.Core
   ( DomBuilder
   , Event
+  , EventWriter
   , MonadHold
   , PerformEvent
   , Performable
@@ -39,6 +41,7 @@ import Reflex.Dom.Core
   , holdDyn
   , inputElement
   , inputElementConfig_elementConfig
+  , leftmost
   , performEvent
   , text
   , (<@)
@@ -58,6 +61,7 @@ page
      , MonadJSM (Performable m)
      , RouteToUrl (R FrontendRoute) m
      , SetRoute t (R FrontendRoute) m
+     , EventWriter t [Toast] m
      )
   => m (Event t ())
 page = mdo
@@ -65,10 +69,20 @@ page = mdo
     elAttr "div" ("class" =: "min-h-[calc(100vh-4rem)] flex items-center justify-center p-6") $
       elAttr "div" ("class" =: "card w-full max-w-sm bg-base-100 shadow-md") $
         elAttr "div" ("class" =: "card-body") $
-          signupWidget errEv
+          signupWidget takenEv
   res <- performRegister regEv
-  let okEv  = fmapMaybe (either (const Nothing) Just) res
+  let okEv = fmapMaybe (either (const Nothing) Just) res
       errEv = fmapMaybe (either Just (const Nothing)) res
+      takenEv = fmapMaybe
+        (\case RegisterTaken -> Just "Username already taken"; _ -> Nothing)
+        errEv
+      unexpectedEv = fmapMaybe
+        (\case RegisterUnexpected m d -> Just (ToastError m d); _ -> Nothing)
+        errEv
+  tellToast $ leftmost
+    [ ToastSuccess MsgAccountCreated <$ okEv
+    , unexpectedEv
+    ]
   setRoute ((FrontendRoute_Home :/ ()) <$ okEv)
   pure (() <$ okEv)
 

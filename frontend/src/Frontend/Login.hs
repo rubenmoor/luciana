@@ -13,7 +13,8 @@ import Common.Auth (LoginRequest (LoginRequest), mkPassword, mkUsername)
 import Common.Route (FrontendRoute (FrontendRoute_Home, FrontendRoute_Signup))
 import Control.Lens ((.~))
 import Control.Monad.Fix (MonadFix)
-import Frontend.Auth (performLogin)
+import Frontend.Auth (LoginError (..), performLogin)
+import Frontend.Toast (Toast (..), ToastMsg (..), tellToast)
 import Frontend.Widget.Form (formEl, labelled, submitButtonClass)
 import Frontend.Widget.Icon (iconArrowRightEndOnRectangle)
 import Language.Javascript.JSaddle (MonadJSM)
@@ -22,6 +23,7 @@ import Obelisk.Route.Frontend (RouteToUrl, SetRoute, routeLink, setRoute)
 import Reflex.Dom.Core
   ( DomBuilder
   , Event
+  , EventWriter
   , MonadHold
   , PerformEvent
   , Performable
@@ -37,6 +39,7 @@ import Reflex.Dom.Core
   , holdDyn
   , inputElement
   , inputElementConfig_elementConfig
+  , leftmost
   , text
   , (<@)
   , (=:)
@@ -55,6 +58,7 @@ page
      , MonadJSM (Performable m)
      , RouteToUrl (R FrontendRoute) m
      , SetRoute t (R FrontendRoute) m
+     , EventWriter t [Toast] m
      )
   => m (Event t ())
 page = mdo
@@ -62,10 +66,20 @@ page = mdo
     elAttr "div" ("class" =: "min-h-[calc(100vh-4rem)] flex items-center justify-center p-6") $
       elAttr "div" ("class" =: "card w-full max-w-sm bg-base-100 shadow-md") $
         elAttr "div" ("class" =: "card-body") $
-          loginWidget errEv
+          loginWidget invalidEv
   res <- performLogin loginEv
-  let okEv  = fmapMaybe (either (const Nothing) Just) res
+  let okEv = fmapMaybe (either (const Nothing) Just) res
       errEv = fmapMaybe (either Just (const Nothing)) res
+      invalidEv = fmapMaybe
+        (\case LoginInvalid -> Just "Invalid username or password"; _ -> Nothing)
+        errEv
+      unexpectedEv = fmapMaybe
+        (\case LoginUnexpected m d -> Just (ToastError m d); _ -> Nothing)
+        errEv
+  tellToast $ leftmost
+    [ ToastSuccess MsgLoggedIn <$ okEv
+    , unexpectedEv
+    ]
   setRoute ((FrontendRoute_Home :/ ()) <$ okEv)
   pure (() <$ okEv)
 

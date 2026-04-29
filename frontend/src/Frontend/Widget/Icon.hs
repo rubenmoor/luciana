@@ -9,6 +9,8 @@
 module Frontend.Widget.Icon
   ( iconArrowRightEndOnRectangle
   , iconArrowLeftStartOnRectangle
+  , iconCheckCircle
+  , iconExclamationTriangle
   , iconUserPlus
   ) where
 
@@ -62,3 +64,13 @@ iconArrowLeftStartOnRectangle = outlineIcon
 iconUserPlus :: (DomBuilder t m, PostBuild t m) => m ()
 iconUserPlus = outlineIcon
   "M18 7.5V10.5M18 10.5V13.5M18 10.5H21M18 10.5H15M12.75 6.375C12.75 8.23896 11.239 9.75 9.375 9.75C7.51104 9.75 6 8.23896 6 6.375C6 4.51104 7.51104 3 9.375 3C11.239 3 12.75 4.51104 12.75 6.375ZM3.00092 19.2343C3.00031 19.198 3 19.1615 3 19.125C3 15.6042 5.85418 12.75 9.375 12.75C12.8958 12.75 15.75 15.6042 15.75 19.125V19.1276C15.75 19.1632 15.7497 19.1988 15.7491 19.2343C13.8874 20.3552 11.7065 21 9.375 21C7.04353 21 4.86264 20.3552 3.00092 19.2343Z"
+
+-- | Circled check — used inside @alert-success@ toasts.
+iconCheckCircle :: (DomBuilder t m, PostBuild t m) => m ()
+iconCheckCircle = outlineIcon
+  "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+
+-- | Warning triangle with exclamation mark — used inside @alert-error@ toasts.
+iconExclamationTriangle :: (DomBuilder t m, PostBuild t m) => m ()
+iconExclamationTriangle = outlineIcon
+  "M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"

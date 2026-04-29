@@ -11,6 +11,7 @@ behaviour (`spec` / `partial` / `implemented` / `reference`).
 
 | File | Status | Scope |
 |---|---|---|
+| [current-state.md](plans/current-state.md) | reference | Session-handoff inbox: pending plans, awaiting work, ungrouped ideas |
 | [goal.md](plans/goal.md) | spec | What the app does, top-level features |
 | [architecture.md](plans/architecture.md) | spec | Layering (FE/common/BE/DB), libs, push flow |
 | [obelisk.md](plans/obelisk.md) | reference | `ob` CLI, thunks, build commands, config dirs |
@@ -26,6 +27,7 @@ behaviour (`spec` / `partial` / `implemented` / `reference`).
 | [schema.md](plans/schema.md) | partial | Postgres tables; some implemented |
 | [database.md](plans/database.md) | partial | beam/postgres setup, pool, migrations |
 | [authentication.md](plans/authentication.md) | implemented | Session cookie, bcrypt, rate-limit |
+| [toasts.md](plans/toasts.md) | spec | Transient success/error messages (DaisyUI toasts, EventWriter) |
 
 ## Source map
 
