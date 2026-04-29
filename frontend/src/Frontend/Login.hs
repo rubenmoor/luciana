@@ -15,6 +15,7 @@ import Control.Lens ((.~))
 import Control.Monad.Fix (MonadFix)
 import Frontend.Auth (performLogin)
 import Frontend.Widget.Form (formEl, labelled, submitButtonClass)
+import Frontend.Widget.Icon (iconArrowRightEndOnRectangle)
 import Language.Javascript.JSaddle (MonadJSM)
 import Obelisk.Route (R, pattern (:/))
 import Obelisk.Route.Frontend (RouteToUrl, SetRoute, routeLink, setRoute)
@@ -96,7 +97,7 @@ loginWidget errorEv = do
             <> "id"           =: "login-password"
             <> "class"        =: "input input-bordered w-full"
              )
-    submitButtonClass "btn btn-primary w-full mt-2" "Sign in"
+    submitButtonClass "btn btn-primary w-full mt-2" iconArrowRightEndOnRectangle "Sign in"
     elAttr "p" ("class" =: "text-error text-sm mt-2 min-h-[1.25rem]") $ dynText errorD
     pure (usernameIn, pwIn)
   elAttr "p" ("class" =: "text-sm text-center mt-2") $ do

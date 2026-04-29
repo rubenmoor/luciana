@@ -27,6 +27,7 @@ library
     Frontend.Login
     Frontend.Signup
     Frontend.Widget.Form
+    Frontend.Widget.Icon
   default-extensions:
     NoImplicitPrelude
     DataKinds

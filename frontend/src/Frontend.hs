@@ -17,6 +17,8 @@ import Frontend.Auth
   )
 import qualified Frontend.Login as Login
 import qualified Frontend.Signup as Signup
+import Frontend.Widget.Form (buttonClass)
+import Frontend.Widget.Icon (iconArrowLeftStartOnRectangle)
 import Obelisk.Frontend (Frontend (Frontend, _frontend_body, _frontend_head))
 import Obelisk.Generated.Static (static)
 import Obelisk.Route (R, pattern (:/))
@@ -28,11 +30,9 @@ import Reflex.Dom.Core
   , MonadHold
   , PostBuild
   , blank
-  , domEvent
   , dyn
   , el
   , elAttr
-  , elAttr'
   , ffor
   , leftmost
   , never
@@ -41,7 +41,6 @@ import Reflex.Dom.Core
   , switchHold
   , text
   , (=:)
-  , EventName (Click)
   )
 import Relude
 
@@ -82,15 +81,6 @@ page title inner = elAttr "main" ("class" =: "container mx-auto p-6") $ do
   elAttr "h1" ("class" =: "text-3xl font-bold mb-4") $ text title
   inner
 
--- | A button element that accepts a CSS class string.
-buttonClass
-  :: DomBuilder t m => Text -> Text -> m (Event t ())
-buttonClass cls label = do
-  (e, _) <- elAttr' "button"
-    ("type" =: "button" <> "class" =: cls)
-    (text label)
-  pure $ domEvent Click e
-
 ----------------------------------------------------------------------
 
 gateRoute
@@ -119,6 +109,6 @@ topBar st = do
         elAttr "div" ("class" =: "flex-1 px-2 text-lg font-semibold") $ text "Luciana"
         elAttr "div" ("class" =: "flex-none gap-2") $ do
           elAttr "span" ("class" =: "text-sm opacity-70") $ text (urUsername u)
-          buttonClass "btn btn-sm btn-ghost" "Log out"
+          buttonClass "btn btn-sm btn-ghost" iconArrowLeftStartOnRectangle "Log out"
     _ -> pure never
   switchHold never evEv

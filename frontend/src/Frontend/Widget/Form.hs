@@ -7,22 +7,23 @@
 module Frontend.Widget.Form
   ( labelled
   , formEl
+  , buttonClass
   , submitButtonClass
   ) where
 
 import Control.Lens ((%~))
-import Data.Proxy (Proxy (Proxy))
 import Reflex.Dom.Core
   ( DomBuilder
   , DomBuilderSpace
   , ElementConfig
   , Event
-  , EventName (Submit)
+  , EventName (Click, Submit)
   , EventResult
   , addEventSpecFlags
   , def
   , domEvent
   , elAttr
+  , elAttr'
   , element
   , elementConfig_eventSpec
   , preventDefault
@@ -62,11 +63,32 @@ formEl inner = do
   (formE, x) <- element "form" cfg inner
   pure (domEvent Submit formE, x)
 
--- | A submit-type button. Inside a <form>, this is the default button
---   that receives Enter-key submission and click submission alike.
+-- | A @type=button@ button with an icon preceding the text label. daisyUI's
+--   @btn@ class applies the gap between icon and label.
+buttonClass
+  :: DomBuilder t m
+  => Text   -- ^ button @class@ attribute
+  -> m ()   -- ^ icon widget (rendered before the label)
+  -> Text   -- ^ visible label text
+  -> m (Event t ())
+buttonClass cls icon label = do
+  (e, _) <- elAttr' "button"
+    ("type" =: "button" <> "class" =: cls) $ do
+      icon
+      text label
+  pure $ domEvent Click e
+
+-- | A @type=submit@ button with an icon preceding the text label. Inside a
+--   <form>, this is the default button that receives Enter-key submission
+--   and click submission alike.
 submitButtonClass
-  :: DomBuilder t m => Text -> Text -> m ()
-submitButtonClass cls lbl =
+  :: DomBuilder t m
+  => Text   -- ^ button @class@ attribute
+  -> m ()   -- ^ icon widget (rendered before the label)
+  -> Text   -- ^ visible label text
+  -> m ()
+submitButtonClass cls icon label =
   elAttr "button"
-    ("type" =: "submit" <> "class" =: cls)
-    (text lbl)
+    ("type" =: "submit" <> "class" =: cls) $ do
+      icon
+      text label

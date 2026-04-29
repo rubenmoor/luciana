@@ -24,6 +24,39 @@ The two built-in themes (`light` default + `dark` via `prefers-color-scheme`)
 give the app a polished, consistent look with zero design decisions required
 upfront.
 
+## Icons
+
+Every button has an icon preceding its text label. An icon-less button is a
+deliberate exception, not the default.
+
+### Library: Heroicons
+
+[Heroicons](https://heroicons.com/) (MIT, by the Tailwind Labs team).
+Chosen for:
+
+- Pairs with Tailwind/daisyUI by design — stroke weight, density, and
+  metrics match the existing component sizing without tuning.
+- MIT licensed, no attribution requirement.
+- **Inline SVG, no web font** — no extra HTTP request, no
+  flash-of-unstyled-text, works offline on first paint (matters for a
+  PWA), and only the icons actually referenced end up in the bundle.
+
+Outline (1.5px stroke, 24×24) is the default style. Solid (20×20) is
+reserved for high-emphasis or destructive actions where the extra visual
+weight is wanted.
+
+### Delivery
+
+Each icon lives as a one-line Reflex widget in `Frontend.Widget.Icon`,
+with the SVG markup pasted directly from heroicons.com. No runtime
+registry, no class lookup — `iconCalendar`, `iconLogOut`, `iconPlus`,
+etc. are just `m ()` values. Adding a new icon: copy its SVG from the
+Heroicons site, drop it into the module as a new function, use it.
+
+The shared button helper in `Frontend.Widget.Form` accepts an icon
+widget alongside the label so the icon-to-label spacing stays consistent
+across every call site.
+
 ## Customising a daisyUI theme in the future
 
 When the app has a brand identity or specific colour requirements, daisyUI
