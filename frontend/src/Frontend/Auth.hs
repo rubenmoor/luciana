@@ -137,8 +137,8 @@ statusToEither r =
        else Left (statusErr s)
 
 statusErr :: Word -> Text
-statusErr 401 = "Invalid email or password"
-statusErr 409 = "Email already registered"
+statusErr 401 = "Invalid username or password"
+statusErr 409 = "Username already taken"
 statusErr 429 = "Too many attempts — try again later"
 statusErr 400 = "Bad request"
 statusErr s   = "Unexpected error (" <> show s <> ")"
