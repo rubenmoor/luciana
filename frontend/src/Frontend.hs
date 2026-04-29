@@ -7,19 +7,16 @@
 
 module Frontend where
 
-import Common.Auth (UserResponse (urEmail))
-import Control.Monad.Fix (MonadFix)
+import Common.Auth (UserResponse (urUsername))
 import Common.Route (FrontendRoute (..))
 import Frontend.Auth
   ( AuthState (AuthSignedIn)
   , currentAuth
-  , performLogin
   , performLogout
-  , performRegister
   , requireSignedIn
   )
-import Frontend.Auth.Widget (loginWidget, signupWidget)
-import Language.Javascript.JSaddle (MonadJSM)
+import qualified Frontend.Login as Login
+import qualified Frontend.Signup as Signup
 import Obelisk.Frontend (Frontend (Frontend, _frontend_body, _frontend_head))
 import Obelisk.Generated.Static (static)
 import Obelisk.Route (R, pattern (:/))
@@ -29,10 +26,7 @@ import Reflex.Dom.Core
   , Dynamic
   , Event
   , MonadHold
-  , PerformEvent
-  , Performable
   , PostBuild
-  , TriggerEvent
   , blank
   , domEvent
   , dyn
@@ -40,7 +34,6 @@ import Reflex.Dom.Core
   , elAttr
   , elAttr'
   , ffor
-  , fmapMaybe
   , leftmost
   , never
   , prerender_
@@ -71,8 +64,8 @@ frontend = Frontend
         FrontendRoute_Calendar -> gateRoute authStateD (placeholder "Calendar")
         FrontendRoute_History  -> gateRoute authStateD (placeholder "History")
         FrontendRoute_Settings -> gateRoute authStateD (placeholder "Settings")
-        FrontendRoute_Login    -> loginPage
-        FrontendRoute_Signup   -> signupPage
+        FrontendRoute_Login    -> Login.page
+        FrontendRoute_Signup   -> Signup.page
       let pageEv    = switchDyn pageEvDyn
           refreshEv = leftmost [logoutDoneEv, pageEv]
       pure ()
@@ -125,53 +118,7 @@ topBar st = do
       elAttr "div" ("class" =: "navbar bg-base-200 shadow-sm") $ do
         elAttr "div" ("class" =: "flex-1 px-2 text-lg font-semibold") $ text "Luciana"
         elAttr "div" ("class" =: "flex-none gap-2") $ do
-          elAttr "span" ("class" =: "text-sm opacity-70") $ text (urEmail u)
+          elAttr "span" ("class" =: "text-sm opacity-70") $ text (urUsername u)
           buttonClass "btn btn-sm btn-ghost" "Log out"
     _ -> pure never
   switchHold never evEv
-
-loginPage
-  :: ( DomBuilder t m
-     , MonadFix m
-     , MonadHold t m
-     , PostBuild t m
-     , PerformEvent t m
-     , TriggerEvent t m
-     , MonadJSM (Performable m)
-     , SetRoute t (R FrontendRoute) m
-     )
-  => m (Event t ())
-loginPage = mdo
-  loginEv <-
-    elAttr "div" ("class" =: "min-h-[calc(100vh-4rem)] flex items-center justify-center p-6") $
-      elAttr "div" ("class" =: "card w-full max-w-sm bg-base-100 shadow-md") $
-        elAttr "div" ("class" =: "card-body") $
-          loginWidget errEv
-  res     <- performLogin loginEv
-  let success = fmapMaybe (either (const Nothing) Just) res
-      errEv   = fmapMaybe (either Just (const Nothing)) res
-  setRoute ((FrontendRoute_Home :/ ()) <$ success)
-  pure success
-
-signupPage
-  :: ( DomBuilder t m
-     , MonadFix m
-     , MonadHold t m
-     , PostBuild t m
-     , PerformEvent t m
-     , TriggerEvent t m
-     , MonadJSM (Performable m)
-     , SetRoute t (R FrontendRoute) m
-     )
-  => m (Event t ())
-signupPage = mdo
-  regEv <-
-    elAttr "div" ("class" =: "min-h-[calc(100vh-4rem)] flex items-center justify-center p-6") $
-      elAttr "div" ("class" =: "card w-full max-w-sm bg-base-100 shadow-md") $
-        elAttr "div" ("class" =: "card-body") $
-          signupWidget errEv
-  res   <- performRegister regEv
-  let success = fmapMaybe (either (const Nothing) Just) res
-      errEv   = fmapMaybe (either Just (const Nothing)) res
-  setRoute ((FrontendRoute_Home :/ ()) <$ success)
-  pure success

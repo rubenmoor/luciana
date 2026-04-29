@@ -19,13 +19,14 @@ Conventions:
 | Column | Type | Constraints |
 |---|---|---|
 | `id` | `BIGSERIAL` | primary key |
-| `email` | `TEXT` | not null, unique |
+| `username` | `TEXT` | not null; uniqueness enforced case-insensitively via the index below |
 | `password_hash` | `TEXT` | not null |
 | `locale` | `TEXT` | not null, check (`locale IN ('de','en')`) |
 | `timezone` | `TEXT` | not null, IANA name (e.g. `Europe/Berlin`); refreshed from the device on every login |
 | `created_at` | `TIMESTAMPTZ` | not null, default `now()` |
 
-Indexes: unique on `email` (created by the constraint).
+Indexes:
+- unique expression index on `lower(username)` — preserves the user's chosen casing for display while preventing `Alice` and `alice` from coexisting.
 
 ---
 
@@ -104,7 +105,7 @@ The ticker can't index directly on "users due now" because dueness is computed p
 -- Backend.Schema.User
 data UserT f = User
   { userId           :: C f (SqlSerial Int64)
-  , userEmail        :: C f Text
+  , userUsername     :: C f Text
   , userPasswordHash :: C f Text
   , userLocale       :: C f Locale          -- Common.I18n
   , userTimezone     :: C f TZName          -- newtype over Text

@@ -1,14 +1,16 @@
 # authentication.md
 
-Status: implemented
+Status: partial
 
-Email + password authentication with server-side sessions. Multi-user from day one (per `goal.md` § Basic features). Schema lives in [`schema.md`](schema.md); library choices in [`architecture.md`](architecture.md).
+Username + password authentication with server-side sessions. Multi-user from day one (per `goal.md` § Basic features). Schema lives in [`schema.md`](schema.md); library choices in [`architecture.md`](architecture.md).
+
+No email is collected. The user picks any username they like (subject to the rules in [Validation](#validation) below); we do not attempt to verify identity outside of the password.
 
 ## Scope
 
 In v1:
 
-- Self-serve registration with email + password.
+- Self-serve registration with username + password.
 - Login, logout, "who am I" probe.
 - Server-issued session cookie, validated per request.
 - Password hashing with **bcrypt**.
@@ -16,8 +18,7 @@ In v1:
 
 Deferred to a later plan:
 
-- Email verification (no SMTP wiring yet — registrations are trusted).
-- Password reset flow (no SMTP).
+- Password reset flow. Without email there is no self-serve recovery path; out of scope until we decide whether to add email or a recovery code mechanism.
 - OAuth / social login.
 - 2FA.
 - Account deletion UI (the cascade delete is in the schema; UI comes later).
@@ -72,10 +73,10 @@ Extend `Common.Route.BackendRoute` with an `Auth` sub-route. Signatures (subject
 
 | Route | Method | Body | Response |
 |---|---|---|---|
-| `auth/register` | POST | `{ email, password, locale, timezone }` | `204` + `Set-Cookie`, or `409` if email taken |
-| `auth/login` | POST | `{ email, password }` | `204` + `Set-Cookie`, or `401` |
+| `auth/register` | POST | `{ username, password, locale, timezone }` | `204` + `Set-Cookie`, or `409` if username taken |
+| `auth/login` | POST | `{ username, password }` | `204` + `Set-Cookie`, or `401` |
 | `auth/logout` | POST | — | `204`, clears cookie |
-| `auth/me` | GET | — | `{ id, email, locale, timezone }` or `401` |
+| `auth/me` | GET | — | `{ id, username, locale, timezone }` or `401` |
 
 `timezone` on register comes from `Intl.DateTimeFormat().resolvedOptions().timeZone` on the client. Refreshed on every successful login (UPDATE `users.timezone`) so device travel is picked up without a separate endpoint.
 
@@ -97,7 +98,7 @@ API handlers that need authentication call `requireUser` first and receive the `
 
 ## Rate limiting
 
-In-memory token bucket keyed by `(remoteAddr, email)`:
+In-memory token bucket keyed by `(remoteAddr, username)`:
 
 - 5 failed login attempts per 15 minutes per key → respond `429 Too Many Requests`.
 - Successful login resets the bucket.
@@ -129,29 +130,44 @@ case route of
 
 `requireSignedIn` redirects to `FrontendRoute_Login` when `AuthAnon`.
 
+### Cross-links between login and signup
+
+The login page renders a small footer line — *"Not registered? Sign up here."* — where "Sign up here" is a link (Obelisk `routeLink`) to `FrontendRoute_Signup`. Symmetrically, the signup page links back to `FrontendRoute_Login` with *"Already have an account? Sign in."* This avoids dead-ends for users who land on the wrong page.
+
 ## Module layout
+
+Per-route handlers follow the convention in [`route-modules.md`](route-modules.md):
+each route gets its own module exporting `handler` (backend) or `page`
+(frontend). Cross-cutting helpers sit in sibling modules.
 
 ```
 common/src/Common/
-├── Auth.hs              -- Email, Password (newtypes with smart constructors), AuthError
+├── Auth.hs              -- Username, Password (newtypes with smart constructors), AuthError
 └── Route.hs             -- + AuthRoute sub-route
 
 backend/src/Backend/
-├── Auth.hs              -- requireUser, login, register, logout, password ops
+├── Auth.hs              -- AuthEnv, requireUser, issueAndSetSession,
+│                           token + snap helpers (cross-cutting)
 ├── Auth/Cookie.hs       -- cookie issue/parse/clear
+├── Auth/Login.hs        -- POST /api/auth/login
+├── Auth/Logout.hs       -- POST /api/auth/logout
+├── Auth/Me.hs           -- GET  /api/auth/me
 ├── Auth/RateLimit.hs    -- in-memory bucket
+├── Auth/Register.hs     -- POST /api/auth/register
 └── Auth/Session.hs      -- DB ops over Backend.Schema.Session
 
 frontend/src/Frontend/
 ├── Auth.hs              -- AuthState, currentAuth, login/logout actions
-└── Auth/Widget.hs       -- loginWidget, signupWidget
+├── Login.hs             -- login page (loginWidget inline, unexported)
+├── Signup.hs            -- signup page (signupWidget inline, unexported)
+└── Widget/Form.hs       -- shared form helpers (labelled, formEl, submitButtonClass)
 ```
 
 ## Validation
 
 Performed in `Common.Auth` so frontend and backend agree:
 
-- Email: non-empty, contains `@`, ≤ 254 chars. No regex theatrics; the verification step (deferred) is the real check.
+- Username: any non-empty string after trimming surrounding whitespace, ≤ 64 chars. Case-sensitive on storage but compared case-insensitively for the uniqueness check (the unique index is on `lower(username)` — see [`schema.md`](schema.md)). No restrictions on which characters appear; the user can pick whatever they want.
 - Password: 8 ≤ length ≤ 200. No composition rules (per current NIST guidance — length over complexity).
 
 ## Open

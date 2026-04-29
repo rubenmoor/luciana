@@ -30,14 +30,15 @@ behaviour (`spec` / `partial` / `implemented` / `reference`).
 ## Source map
 
 ```
-backend/src/Backend/         Backend.hs, Api.hs, Db.hs, Auth.hs
-backend/src/Backend/Auth/    Cookie.hs, Session.hs, RateLimit.hs
-backend/src/Backend/Schema/  User.hs, Session.hs, PeriodEntry.hs,
-                             PushSubscription.hs, NotificationPref.hs,
-                             Db.hs, Migration.hs
-common/src/Common/           Route.hs, Auth.hs, Api.hs, I18n.hs
-frontend/src/Frontend/       Frontend.hs, Auth.hs
-frontend/src/Frontend/Auth/  Widget.hs
+backend/src/Backend/          Backend.hs, Api.hs, Db.hs, Auth.hs
+backend/src/Backend/Auth/     Cookie.hs, Login.hs, Logout.hs, Me.hs,
+                              RateLimit.hs, Register.hs, Session.hs
+backend/src/Backend/Schema/   User.hs, Session.hs, PeriodEntry.hs,
+                              PushSubscription.hs, NotificationPref.hs,
+                              Db.hs, Migration.hs
+common/src/Common/            Route.hs, Auth.hs, Api.hs, I18n.hs
+frontend/src/Frontend/        Frontend.hs, Auth.hs, Login.hs, Signup.hs
+frontend/src/Frontend/Widget/ Form.hs
 ```
 
 ## Cross-cutting conventions

@@ -24,7 +24,9 @@ library
   exposed-modules:
     Frontend
     Frontend.Auth
-    Frontend.Auth.Widget
+    Frontend.Login
+    Frontend.Signup
+    Frontend.Widget.Form
   default-extensions:
     NoImplicitPrelude
     DataKinds

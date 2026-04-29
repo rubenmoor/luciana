@@ -1,7 +1,7 @@
 module Common.Auth
-  ( Email
-  , unEmail
-  , mkEmail
+  ( Username
+  , unUsername
+  , mkUsername
   , Password
   , unPassword
   , mkPassword
@@ -24,18 +24,17 @@ import Data.Aeson
 import qualified Data.Text as T
 import Relude
 
--- | Validated email. Smart constructor in 'mkEmail'.
-newtype Email = Email { unEmail :: Text }
+-- | Validated username. Smart constructor in 'mkUsername'.
+newtype Username = Username { unUsername :: Text }
   deriving stock (Eq, Show)
 
-mkEmail :: Text -> Either AuthError Email
-mkEmail raw =
+mkUsername :: Text -> Either AuthError Username
+mkUsername raw =
   let trimmed = T.strip raw
       n       = T.length trimmed
-  in if | n == 0           -> Left InvalidEmail
-        | n > 254          -> Left InvalidEmail
-        | not (T.any (== '@') trimmed) -> Left InvalidEmail
-        | otherwise        -> Right (Email trimmed)
+  in if | n == 0  -> Left InvalidUsername
+        | n > 64  -> Left InvalidUsername
+        | otherwise -> Right (Username trimmed)
 
 -- | Validated plaintext password. Constructed only from a request body;
 -- never serialised. No 'Show' or 'ToJSON' instance — keeps the secret out of
@@ -51,40 +50,40 @@ mkPassword raw =
         | otherwise -> Right (Password raw)
 
 data AuthError
-  = InvalidEmail
+  = InvalidUsername
   | InvalidPassword
-  | EmailTaken
+  | UsernameTaken
   | BadCredentials
   | RateLimited
   deriving stock (Eq, Show)
 
 data RegisterRequest = RegisterRequest
-  { rrEmail    :: Email
+  { rrUsername :: Username
   , rrPassword :: Password
   , rrLocale   :: Locale
   , rrTimezone :: Text
   }
 
 data LoginRequest = LoginRequest
-  { lrEmail    :: Email
+  { lrUsername :: Username
   , lrPassword :: Password
   }
 
 data UserResponse = UserResponse
   { urId       :: Int64
-  , urEmail    :: Text
+  , urUsername :: Text
   , urLocale   :: Locale
   , urTimezone :: Text
   }
   deriving stock (Eq, Show)
 
-instance FromJSON Email where
-  parseJSON = withText "Email" $ \t -> case mkEmail t of
-    Right e -> pure e
-    Left _  -> fail "invalid email"
+instance FromJSON Username where
+  parseJSON = withText "Username" $ \t -> case mkUsername t of
+    Right u -> pure u
+    Left _  -> fail "invalid username"
 
-instance ToJSON Email where
-  toJSON = toJSON . unEmail
+instance ToJSON Username where
+  toJSON = toJSON . unUsername
 
 instance FromJSON Password where
   parseJSON = withText "Password" $ \t -> case mkPassword t of
@@ -94,14 +93,14 @@ instance FromJSON Password where
 instance FromJSON RegisterRequest where
   parseJSON = withObject "RegisterRequest" $ \o ->
     RegisterRequest
-      <$> o .: "email"
+      <$> o .: "username"
       <*> o .: "password"
       <*> o .: "locale"
       <*> o .: "timezone"
 
 instance ToJSON RegisterRequest where
   toJSON r = object
-    [ "email"    .= rrEmail r
+    [ "username" .= rrUsername r
     , "password" .= unPassword (rrPassword r)
     , "locale"   .= rrLocale r
     , "timezone" .= rrTimezone r
@@ -110,19 +109,19 @@ instance ToJSON RegisterRequest where
 instance FromJSON LoginRequest where
   parseJSON = withObject "LoginRequest" $ \o ->
     LoginRequest
-      <$> o .: "email"
+      <$> o .: "username"
       <*> o .: "password"
 
 instance ToJSON LoginRequest where
   toJSON r = object
-    [ "email"    .= lrEmail r
+    [ "username" .= lrUsername r
     , "password" .= unPassword (lrPassword r)
     ]
 
 instance ToJSON UserResponse where
   toJSON ur = object
     [ "id"       .= urId ur
-    , "email"    .= urEmail ur
+    , "username" .= urUsername ur
     , "locale"   .= urLocale ur
     , "timezone" .= urTimezone ur
     ]
@@ -131,6 +130,6 @@ instance FromJSON UserResponse where
   parseJSON = withObject "UserResponse" $ \o ->
     UserResponse
       <$> o .: "id"
-      <*> o .: "email"
+      <*> o .: "username"
       <*> o .: "locale"
       <*> o .: "timezone"

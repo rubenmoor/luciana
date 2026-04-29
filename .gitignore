@@ -18,3 +18,5 @@ static.out
 .npm-global/
 .pg/
 config/backend/db-url
+.claude/settings.local.json
+.claude/*.lock

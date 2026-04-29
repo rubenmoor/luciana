@@ -37,7 +37,11 @@ library
     Backend.Api
     Backend.Auth
     Backend.Auth.Cookie
+    Backend.Auth.Login
+    Backend.Auth.Logout
+    Backend.Auth.Me
     Backend.Auth.RateLimit
+    Backend.Auth.Register
     Backend.Auth.Session
     Backend.Db
     Backend.Schema.Db

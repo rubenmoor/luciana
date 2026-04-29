@@ -5,13 +5,11 @@ module Backend.Api
   ( serveBackendRoute
   ) where
 
-import Backend.Auth
-  ( AuthEnv
-  , handleLogin
-  , handleLogout
-  , handleMe
-  , handleRegister
-  )
+import Backend.Auth (AuthEnv)
+import qualified Backend.Auth.Login as Login
+import qualified Backend.Auth.Logout as Logout
+import qualified Backend.Auth.Me as Me
+import qualified Backend.Auth.Register as Register
 import Common.Route
   ( ApiRoute (..)
   , AuthRoute (..)
@@ -39,10 +37,10 @@ serveApiRoute env (ar :/ v) = case ar of
 
 serveAuthRoute :: AuthEnv -> R AuthRoute -> Snap ()
 serveAuthRoute env (ar :/ _) = case ar of
-  AuthRoute_Register -> handleRegister env
-  AuthRoute_Login    -> handleLogin env
-  AuthRoute_Logout   -> handleLogout env
-  AuthRoute_Me       -> handleMe env
+  AuthRoute_Register -> Register.handler env
+  AuthRoute_Login    -> Login.handler env
+  AuthRoute_Logout   -> Logout.handler env
+  AuthRoute_Me       -> Me.handler env
 
 servePeriodRoute :: R PeriodRoute -> Snap ()
 servePeriodRoute (pr :/ _) = case pr of

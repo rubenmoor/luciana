@@ -1,51 +1,33 @@
--- | TypeApplications: typed `try` for the unique-violation catch in register.
--- NumericUnderscores: readable sleep interval literals.
+-- | NumericUnderscores: readable sleep interval literals.
 {-# LANGUAGE NumericUnderscores #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Backend.Auth
   ( AuthEnv
   , aePool
+  , aeRateLimiter
+  , aeCookieSecure
   , mkAuthEnv
   , forkSessionCleanup
   , requireUser
-  , handleRegister
-  , handleLogin
-  , handleLogout
-  , handleMe
+  , issueAndSetSession
+  , generateToken
+  , hashToken
+  , parseJsonBody
+  , writeJson
+  , errorStatus
+  , unauthorized
   ) where
 
-import Backend.Auth.Cookie
-  ( clearCookieHeader
-  , issueCookieHeader
-  , readCookieToken
-  )
-import Backend.Auth.RateLimit
-  ( RateLimiter
-  , checkAndConsume
-  , newRateLimiter
-  , reset
-  )
+import Backend.Auth.Cookie (issueCookieHeader, readCookieToken)
+import Backend.Auth.RateLimit (RateLimiter, newRateLimiter)
 import Backend.Auth.Session
   ( bumpSession
   , createSession
   , deleteExpiredSessions
-  , deleteSession
   , lookupSession
   )
 import Backend.Db (DbPool, withConn)
-import Common.Auth
-  ( Email
-  , LoginRequest (lrEmail, lrPassword)
-  , RegisterRequest (rrEmail, rrLocale, rrPassword, rrTimezone)
-  , UserResponse (UserResponse)
-  , unEmail
-  , unPassword
-  )
-import Common.I18n (Locale, localeFromText, localeToText)
 import Control.Concurrent (ThreadId, forkIO, threadDelay)
-import Control.Exception (try)
-import qualified Crypto.BCrypt as BCrypt
 import qualified Crypto.Hash as Hash
 import qualified Crypto.Random.Entropy as Entropy
 import qualified Data.Aeson as Aeson
@@ -58,25 +40,14 @@ import Data.Time
   , diffUTCTime
   , getCurrentTime
   )
-import Database.PostgreSQL.Simple
-  ( Connection
-  , Only (Only)
-  , SqlError
-  , query
-  , sqlState
-  )
 import Relude
 import Snap.Core
-  ( Method (GET, POST)
-  , Snap
+  ( Snap
   , addHeader
   , finishWith
   , getResponse
-  , getsRequest
-  , method
   , modifyResponse
   , readRequestBody
-  , rqClientAddr
   , setHeader
   , setResponseStatus
   , writeLBS
@@ -105,18 +76,7 @@ forkSessionCleanup env = forkIO $ forever $ do
     void (deleteExpiredSessions c)
 
 ----------------------------------------------------------------------
--- Password & token helpers
-
-hashPassword :: Text -> IO (Maybe Text)
-hashPassword pw = do
-  m <- BCrypt.hashPasswordUsingPolicy
-         BCrypt.slowerBcryptHashingPolicy { BCrypt.preferredHashCost = 12 }
-         (encodeUtf8 pw)
-  pure (decodeUtf8 <$> m)
-
-verifyPassword :: Text -> Text -> Bool
-verifyPassword pw hashed =
-  BCrypt.validatePassword (encodeUtf8 hashed) (encodeUtf8 pw)
+-- Token & timing
 
 generateToken :: IO Text
 generateToken = do
@@ -125,9 +85,6 @@ generateToken = do
 
 hashToken :: ByteString -> ByteString
 hashToken raw = BA.convert (Hash.hash raw :: Hash.Digest Hash.SHA256)
-
-----------------------------------------------------------------------
--- Session lifetime
 
 sessionLifetime :: NominalDiffTime
 sessionLifetime = 60 * 60 * 24 * 30
@@ -166,108 +123,7 @@ requireUser env = do
           pure uid
 
 ----------------------------------------------------------------------
--- Handlers
-
-handleRegister :: AuthEnv -> Snap ()
-handleRegister env = method POST $ do
-  ip     <- getsRequest (decodeUtf8 . rqClientAddr)
-  rateOk <- liftIO $ checkAndConsume (aeRateLimiter env) (ip, "register")
-  unless rateOk $ errorStatus 429 "Too Many Requests"
-  mReq <- parseJsonBody
-  case mReq of
-    Nothing  -> errorStatus 400 "Bad Request"
-    Just req -> doRegister env req
-
-doRegister :: AuthEnv -> RegisterRequest -> Snap ()
-doRegister env req = do
-  mHashed <- liftIO $ hashPassword (unPassword (rrPassword req))
-  case mHashed of
-    Nothing -> errorStatus 500 "Internal Server Error"
-    Just hashed -> do
-      let act = withConn (aePool env) $ \c ->
-            insertUser c (rrEmail req) hashed (rrLocale req) (rrTimezone req)
-      result <- liftIO (try @SqlError act)
-      case result of
-        Left e
-          | sqlState e == "23505" -> errorStatus 409 "Email Taken"
-          | otherwise             -> errorStatus 500 "Internal Server Error"
-        Right uid -> issueAndSetSession env uid
-
-handleLogin :: AuthEnv -> Snap ()
-handleLogin env = method POST $ do
-  ip   <- getsRequest (decodeUtf8 . rqClientAddr)
-  mReq <- parseJsonBody
-  case mReq of
-    Nothing  -> errorStatus 400 "Bad Request"
-    Just req -> do
-      let key = (ip, unEmail (lrEmail req))
-      rateOk <- liftIO $ checkAndConsume (aeRateLimiter env) key
-      unless rateOk $ errorStatus 429 "Too Many Requests"
-      mAuth <- liftIO $ withConn (aePool env) $ \c ->
-        lookupUserForLogin c (lrEmail req)
-      case mAuth of
-        Just (uid, hashed)
-          | verifyPassword (unPassword (lrPassword req)) hashed -> do
-              liftIO $ reset (aeRateLimiter env) key
-              issueAndSetSession env uid
-        _ -> errorStatus 401 "Unauthorized"
-
-handleLogout :: AuthEnv -> Snap ()
-handleLogout env = method POST $ do
-  mTok <- readCookieToken
-  forM_ mTok $ \raw ->
-    liftIO $ withConn (aePool env) $ \c ->
-      deleteSession c (hashToken raw)
-  modifyResponse $ addHeader "Set-Cookie"
-    (clearCookieHeader (aeCookieSecure env))
-  modifyResponse $ setResponseStatus 204 "No Content"
-
-handleMe :: AuthEnv -> Snap ()
-handleMe env = method GET $ do
-  uid   <- requireUser env
-  mUser <- liftIO $ withConn (aePool env) $ \c -> lookupUser c uid
-  case mUser of
-    Nothing -> errorStatus 401 "Unauthorized"
-    Just ur -> writeJson ur
-
-----------------------------------------------------------------------
--- DB queries (postgresql-simple)
-
-insertUser :: Connection -> Email -> Text -> Locale -> Text -> IO Int64
-insertUser conn email hashed loc tz = do
-  rows <- query conn
-    "INSERT INTO users (email, password_hash, locale, timezone) \
-    \VALUES (?, ?, ?, ?) RETURNING id"
-    (unEmail email, hashed, localeToText loc, tz)
-    :: IO [Only Int64]
-  case rows of
-    [Only uid] -> pure uid
-    _          -> error "INSERT users RETURNING id produced no row"
-
-lookupUserForLogin :: Connection -> Email -> IO (Maybe (Int64, Text))
-lookupUserForLogin conn email = do
-  rows <- query conn
-    "SELECT id, password_hash FROM users WHERE email = ?"
-    (Only (unEmail email))
-    :: IO [(Int64, Text)]
-  pure $ case rows of
-    [(uid, h)] -> Just (uid, h)
-    _          -> Nothing
-
-lookupUser :: Connection -> Int64 -> IO (Maybe UserResponse)
-lookupUser conn uid = do
-  rows <- query conn
-    "SELECT id, email, locale, timezone FROM users WHERE id = ?"
-    (Only uid)
-    :: IO [(Int64, Text, Text, Text)]
-  pure $ case rows of
-    [(i, e, l, t)] -> case localeFromText l of
-      Just loc -> Just (UserResponse i e loc t)
-      Nothing  -> Nothing
-    _ -> Nothing
-
-----------------------------------------------------------------------
--- Session issuance
+-- Session issuance (shared by Register and Login)
 
 issueAndSetSession :: AuthEnv -> Int64 -> Snap ()
 issueAndSetSession env uid = do

@@ -57,7 +57,7 @@ import Relude
 
 data UserT f = User
   { userId           :: C f (SqlSerial Int64)
-  , userEmail        :: C f Text
+  , userUsername     :: C f Text
   , userPasswordHash :: C f Text
   , userLocale       :: C f Locale
   , userTimezone     :: C f TZName
