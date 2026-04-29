@@ -23,6 +23,7 @@ library
                , text
   exposed-modules:
     Frontend
+    Frontend.Api
     Frontend.Auth
     Frontend.Login
     Frontend.Signup

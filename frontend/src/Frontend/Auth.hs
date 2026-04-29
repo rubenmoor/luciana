@@ -15,8 +15,14 @@ module Frontend.Auth
   ) where
 
 import Common.Auth (LoginRequest, RegisterRequest, UserResponse)
-import Common.Route (FrontendRoute (FrontendRoute_Login))
+import Common.Route
+  ( ApiRoute (ApiRoute_Auth)
+  , AuthRoute (AuthRoute_Login, AuthRoute_Logout, AuthRoute_Me, AuthRoute_Register)
+  , BackendRoute (BackendRoute_Api)
+  , FrontendRoute (FrontendRoute_Login)
+  )
 import Data.Default (def)
+import Frontend.Api (apiUrl)
 import Language.Javascript.JSaddle
   ( MonadJSM
   , eval
@@ -84,7 +90,9 @@ currentAuth refreshEv = do
   holdDyn AuthLoading stateEv
 
 meRequest :: XhrRequest ()
-meRequest = XhrRequest "GET" "/api/auth/me" def
+meRequest = XhrRequest "GET"
+  (apiUrl (BackendRoute_Api :/ ApiRoute_Auth :/ AuthRoute_Me :/ ()))
+  def
 
 ----------------------------------------------------------------------
 -- performLogin / performRegister / performLogout
@@ -101,7 +109,8 @@ performLogin
   => Event t LoginRequest
   -> m (Event t (Either Text ()))
 performLogin reqEv = do
-  resp <- performRequestAsync (postJson "/api/auth/login" <$> reqEv)
+  let url = apiUrl (BackendRoute_Api :/ ApiRoute_Auth :/ AuthRoute_Login :/ ())
+  resp <- performRequestAsync (postJson url <$> reqEv)
   pure (statusToEither <$> resp)
 
 performRegister
@@ -112,7 +121,8 @@ performRegister
   => Event t RegisterRequest
   -> m (Event t (Either Text ()))
 performRegister reqEv = do
-  resp <- performRequestAsync (postJson "/api/auth/register" <$> reqEv)
+  let url = apiUrl (BackendRoute_Api :/ ApiRoute_Auth :/ AuthRoute_Register :/ ())
+  resp <- performRequestAsync (postJson url <$> reqEv)
   pure (statusToEither <$> resp)
 
 performLogout
@@ -127,7 +137,9 @@ performLogout ev = do
   pure (() <$ resp)
 
 logoutRequest :: XhrRequest ()
-logoutRequest = XhrRequest "POST" "/api/auth/logout" def
+logoutRequest = XhrRequest "POST"
+  (apiUrl (BackendRoute_Api :/ ApiRoute_Auth :/ AuthRoute_Logout :/ ()))
+  def
 
 statusToEither :: XhrResponse -> Either Text ()
 statusToEither r =
