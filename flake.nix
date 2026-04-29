@@ -85,6 +85,9 @@
             export NPM_CONFIG_PREFIX="$PWD/.npm-global"
             export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
 
+            export NIX_PATH="nixpkgs=$(nix-instantiate --eval --strict \
+              -E '(import ./.obelisk/impl {}).nixpkgs.path' | tr -d '"')"
+
             export LUCIANA_ROOT="$PWD"
             export PGDATA="$LUCIANA_ROOT/.pg/data"
             export PGHOST="$LUCIANA_ROOT/.pg/sock"

@@ -2,7 +2,7 @@
 
 Status: reference
 
-Local development services. Today: Postgres only.
+Local development services and dev-shell environment.
 
 ## Postgres
 
@@ -64,6 +64,33 @@ pg-up                     # at the start of a session
 ob run                    # backend connects via the socket
 pg-down                   # at end of session (optional)
 ```
+
+## NIX_PATH (pinned to obelisk's nixpkgs)
+
+`obelisk-command` 0.9.0.1 hard-codes a bundled Nix 2.11.0. Inside `ob run` it
+performs auxiliary evaluations against `<nixpkgs>` (e.g.
+`(import <nixpkgs> { system = "x86_64-linux"; }).writeText …`). Modern
+nixpkgs (≥ 24.11) refuses to evaluate under Nix < 2.18, so any user whose
+`NIX_PATH` resolves `nixpkgs` to a recent channel hits:
+
+```
+This version of Nixpkgs requires an implementation of Nix with the
+following features: builtins.nixVersion reports at least 2.18
+You are evaluating with Nix 2.11.0
+```
+
+Fix: in `flake.nix` `shellHook`, override `NIX_PATH` to obelisk's pinned
+nixpkgs (which is by definition compatible with Nix 2.11):
+
+```bash
+export NIX_PATH="nixpkgs=$(nix-instantiate --eval --strict \
+  -E '(import ./.obelisk/impl {}).nixpkgs.path' | tr -d '\"')"
+```
+
+Run by direnv on shell entry. Side effect: `<nixpkgs>` from inside the dev
+shell now resolves to obelisk's pinned (older) nixpkgs, not the system
+channel. That's fine — nothing else in this project's tooling consults
+`<nixpkgs>` directly.
 
 ## Out of scope
 
