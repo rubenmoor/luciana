@@ -25,17 +25,24 @@ library
                , obelisk-backend
                , obelisk-executable-config-lookup
                , obelisk-route
+               , http-types
+               , mtl
                , postgresql-simple
                , relude
                , resource-pool
+               , servant
+               , servant-snap
                , snap-core
                , text
                , time
+               , transformers
                , unordered-containers
   exposed-modules:
     Backend
     Backend.Api
+    Backend.App
     Backend.Auth
+    Backend.Auth.Combinator
     Backend.Auth.Cookie
     Backend.Auth.Login
     Backend.Auth.Logout
@@ -44,6 +51,8 @@ library
     Backend.Auth.Register
     Backend.Auth.Session
     Backend.Db
+    Backend.Env
+    Backend.RateLimit.Combinator
     Backend.Schema.Db
     Backend.Schema.Migration
     Backend.Schema.NotificationPref

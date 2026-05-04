@@ -23,16 +23,11 @@ import Common.Auth
   , RegisterResult (RegisterOk, UsernameTaken)
   , UserResponse
   )
-import Common.Route
-  ( ApiRoute (ApiRoute_Auth)
-  , AuthRoute (AuthRoute_Login, AuthRoute_Logout, AuthRoute_Me, AuthRoute_Register)
-  , BackendRoute (BackendRoute_Api)
-  , FrontendRoute (FrontendRoute_Login)
-  )
+import Common.Route (FrontendRoute (FrontendRoute_Login))
 import qualified Data.Aeson as Aeson
 import Data.Default (def)
 import qualified Data.Text.Encoding as TE
-import Frontend.Api (apiUrl)
+import Frontend.Api (loginUrl, logoutUrl, meUrl, registerUrl)
 import Frontend.Toast (ToastMsg (..))
 import Language.Javascript.JSaddle
   ( MonadJSM
@@ -102,9 +97,7 @@ currentAuth refreshEv = do
   holdDyn AuthLoading stateEv
 
 meRequest :: XhrRequest ()
-meRequest = XhrRequest "GET"
-  (apiUrl (BackendRoute_Api :/ ApiRoute_Auth :/ AuthRoute_Me :/ ()))
-  def
+meRequest = XhrRequest "GET" meUrl def
 
 ----------------------------------------------------------------------
 -- performLogin / performRegister / performLogout
@@ -135,9 +128,8 @@ performLogin
   => Event t LoginRequest
   -> m (Event t (Either LoginError UserResponse))
 performLogin reqEv = do
-  let url = apiUrl (BackendRoute_Api :/ ApiRoute_Auth :/ AuthRoute_Login :/ ())
-  resp <- performRequestAsync (postJson url <$> reqEv)
-  pure (decodeLogin url <$> resp)
+  resp <- performRequestAsync (postJson loginUrl <$> reqEv)
+  pure (decodeLogin loginUrl <$> resp)
 
 decodeLogin :: Text -> XhrResponse -> Either LoginError UserResponse
 decodeLogin url r
@@ -163,9 +155,8 @@ performRegister
   => Event t RegisterRequest
   -> m (Event t (Either RegisterError UserResponse))
 performRegister reqEv = do
-  let url = apiUrl (BackendRoute_Api :/ ApiRoute_Auth :/ AuthRoute_Register :/ ())
-  resp <- performRequestAsync (postJson url <$> reqEv)
-  pure (decodeRegister url <$> resp)
+  resp <- performRequestAsync (postJson registerUrl <$> reqEv)
+  pure (decodeRegister registerUrl <$> resp)
 
 decodeRegister :: Text -> XhrResponse -> Either RegisterError UserResponse
 decodeRegister url r
@@ -195,9 +186,7 @@ performLogout ev = do
   pure (() <$ resp)
 
 logoutRequest :: XhrRequest ()
-logoutRequest = XhrRequest "POST"
-  (apiUrl (BackendRoute_Api :/ ApiRoute_Auth :/ AuthRoute_Logout :/ ()))
-  def
+logoutRequest = XhrRequest "POST" logoutUrl def
 
 statusOk :: XhrResponse -> Bool
 statusOk r = let s = _xhrResponse_status r in s >= 200 && s < 300

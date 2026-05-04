@@ -1,7 +1,9 @@
 module Backend.Auth.Cookie
   ( cookieName
   , issueCookieHeader
+  , issueCookieHeaderText
   , clearCookieHeader
+  , clearCookieHeaderText
   , readCookieToken
   ) where
 
@@ -55,6 +57,15 @@ clearCookieHeader secure =
     , setCookieSecure   = secure
     , setCookieSameSite = Just sameSiteStrict
     }
+
+-- | 'issueCookieHeader' decoded as 'Text' for use as a servant
+-- @Header "Set-Cookie" Text@ value. Cookie strings are ASCII so the
+-- UTF-8 round-trip is lossless.
+issueCookieHeaderText :: Bool -> Text -> Text
+issueCookieHeaderText secure = decodeUtf8 . issueCookieHeader secure
+
+clearCookieHeaderText :: Bool -> Text
+clearCookieHeaderText = decodeUtf8 . clearCookieHeader
 
 renderSetCookieToBytes :: SetCookie -> ByteString
 renderSetCookieToBytes = LBS.toStrict . BSB.toLazyByteString . renderSetCookie

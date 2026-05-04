@@ -1,19 +1,16 @@
+{-# LANGUAGE DataKinds #-}
+
 module Backend.Auth.Login
   ( handler
   ) where
 
-import Backend.Auth
-  ( AuthEnv
-  , aePool
-  , aeRateLimiter
-  , errorStatus
-  , loadUserResponse
-  , parseJsonBody
-  , setSessionCookie
-  , writeJson
-  )
-import Backend.Auth.RateLimit (checkAndConsume, reset)
+import Backend.App (App, throwApp)
+import Backend.Auth (generateToken, hashToken, loadUserResponse, newExpiry)
+import Backend.Auth.Cookie (issueCookieHeaderText)
+import Backend.Auth.Session (createSession)
 import Backend.Db (withConn)
+import Backend.Env (envCookieSecure, envPool)
+import Backend.RateLimit.Combinator (RateBucket, clearBucket)
 import Common.Auth
   ( LoginRequest (lrPassword, lrUsername)
   , LoginResult (InvalidCredentials, LoginOk)
@@ -22,41 +19,34 @@ import Common.Auth
   , unUsername
   )
 import qualified Crypto.BCrypt as BCrypt
-import qualified Data.Text as T
+import Data.Time (getCurrentTime)
 import Database.PostgreSQL.Simple (Connection, Only (Only), query)
 import Relude
-import Snap.Core
-  ( Method (POST)
-  , Snap
-  , getsRequest
-  , method
-  , rqClientAddr
-  )
+import Servant.API (Header, Headers, addHeader, noHeader)
+import Servant.Server (err500)
 
-handler :: AuthEnv -> Snap ()
-handler env = method POST $ do
-  ip   <- getsRequest (decodeUtf8 . rqClientAddr)
-  mReq <- parseJsonBody
-  case mReq of
-    Nothing  -> errorStatus 400 "Bad Request"
-    Just req -> do
-      let key = (ip, T.toLower (unUsername (lrUsername req)))
-      rateOk <- liftIO $ checkAndConsume (aeRateLimiter env) key
-      if not rateOk
-        then errorStatus 429 "Too Many Requests"
-        else do
-          mAuth <- liftIO $ withConn (aePool env) $ \c ->
-            lookupUserForLogin c (lrUsername req)
-          case mAuth of
-            Just (uid, hashed)
-              | verifyPassword (unPassword (lrPassword req)) hashed -> do
-                  liftIO $ reset (aeRateLimiter env) key
-                  setSessionCookie env uid
-                  mUr <- liftIO $ loadUserResponse (aePool env) uid
-                  case mUr of
-                    Just ur -> writeJson (LoginOk ur)
-                    Nothing -> errorStatus 500 "Internal Server Error"
-            _ -> writeJson InvalidCredentials
+handler
+  :: RateBucket
+  -> LoginRequest
+  -> App (Headers '[Header "Set-Cookie" Text] LoginResult)
+handler bucket req = do
+  pool   <- asks envPool
+  secure <- asks envCookieSecure
+  mAuth  <- liftIO $ withConn pool $ \c -> lookupUserForLogin c (lrUsername req)
+  case mAuth of
+    Just (uid, hashed)
+      | verifyPassword (unPassword (lrPassword req)) hashed -> do
+          clearBucket bucket
+          tok <- liftIO generateToken
+          now <- liftIO getCurrentTime
+          let h = hashToken (encodeUtf8 tok)
+          liftIO $ withConn pool $ \c -> createSession c uid h (newExpiry now)
+          mUr <- liftIO $ loadUserResponse pool uid
+          case mUr of
+            Just ur -> pure $ addHeader (issueCookieHeaderText secure tok)
+                                        (LoginOk ur)
+            Nothing -> throwApp err500
+    _ -> pure (noHeader InvalidCredentials)
 
 verifyPassword :: Text -> Text -> Bool
 verifyPassword pw hashed =

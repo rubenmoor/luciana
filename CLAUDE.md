@@ -27,7 +27,8 @@ behaviour (`spec` / `partial` / `implemented` / `reference`).
 | [schema.md](plans/schema.md) | partial | Postgres tables; some implemented |
 | [database.md](plans/database.md) | partial | beam/postgres setup, pool, migrations |
 | [authentication.md](plans/authentication.md) | implemented | Session cookie, bcrypt, rate-limit |
-| [toasts.md](plans/toasts.md) | spec | Transient success/error messages (DaisyUI toasts, EventWriter) |
+| [backend.md](plans/backend.md) | spec | `Env` + `ReaderT` app monad; Snap middleware to keep handlers lean |
+| [toasts.md](plans/toasts.md) | implemented | Transient success/error messages (DaisyUI toasts, EventWriter) |
 
 ## Source map
 

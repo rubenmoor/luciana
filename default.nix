@@ -15,6 +15,7 @@
   }
 }:
 with obelisk;
+with obelisk.nixpkgs.haskell.lib;
 project ./. ({ pkgs, ... }: {
   staticFiles = import ./static { inherit pkgs; };
   android.applicationId = "systems.obsidian.obelisk.examples.minimal";
@@ -32,5 +33,14 @@ project ./. ({ pkgs, ... }: {
       ver = "0.5.3.0";
       sha256 = "0bqkqv0ip1sshxc98yc0gx1w8j7xv7yypd1gafz93glvmay2pxi9";
     } {};
+    # servant-snap 0.9.0 in nixpkgs has tight bounds (servant <0.17) and
+    # depends on a broken hspec-snap; we use rubenmoor's fork that
+    # supports newer servant, and jailbreak/dontCheck both packages.
+    servant-snap = dontCheck (doJailbreak (self.callCabal2nix "servant-snap" (pkgs.fetchFromGitHub {
+      owner = "rubenmoor";
+      repo = "servant-snap";
+      rev = "4850305bd586e887229954ad9dfccb649c497f8e";
+      sha256 = "1ins0j4vd3cmf2dgh601b4wjqky79myz1245v2b59m5zsp11am01";
+    }) {}));
   };
 })

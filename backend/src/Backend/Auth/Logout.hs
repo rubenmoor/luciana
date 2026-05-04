@@ -1,27 +1,24 @@
+{-# LANGUAGE DataKinds #-}
+
 module Backend.Auth.Logout
   ( handler
   ) where
 
-import Backend.Auth (AuthEnv, aeCookieSecure, aePool, hashToken)
-import Backend.Auth.Cookie (clearCookieHeader, readCookieToken)
+import Backend.App (App)
+import Backend.Auth (hashToken)
+import Backend.Auth.Combinator (UserId)
+import Backend.Auth.Cookie (clearCookieHeaderText, readCookieToken)
 import Backend.Auth.Session (deleteSession)
 import Backend.Db (withConn)
+import Backend.Env (envCookieSecure, envPool)
 import Relude
-import Snap.Core
-  ( Method (POST)
-  , Snap
-  , addHeader
-  , method
-  , modifyResponse
-  , setResponseStatus
-  )
+import Servant.API (Header, Headers, NoContent (NoContent), addHeader)
 
-handler :: AuthEnv -> Snap ()
-handler env = method POST $ do
-  mTok <- readCookieToken
+handler :: UserId -> App (Headers '[Header "Set-Cookie" Text] NoContent)
+handler _uid = do
+  pool   <- asks envPool
+  secure <- asks envCookieSecure
+  mTok   <- lift readCookieToken
   forM_ mTok $ \raw ->
-    liftIO $ withConn (aePool env) $ \c ->
-      deleteSession c (hashToken raw)
-  modifyResponse $ addHeader "Set-Cookie"
-    (clearCookieHeader (aeCookieSecure env))
-  modifyResponse $ setResponseStatus 204 "No Content"
+    liftIO $ withConn pool $ \c -> deleteSession c (hashToken raw)
+  pure (addHeader (clearCookieHeaderText secure) NoContent)

@@ -2,21 +2,16 @@ module Backend.Auth.Me
   ( handler
   ) where
 
-import Backend.Auth
-  ( AuthEnv
-  , aePool
-  , errorStatus
-  , loadUserResponse
-  , requireUser
-  , writeJson
-  )
+import Backend.App (App, throwApp)
+import Backend.Auth (loadUserResponse)
+import Backend.Auth.Combinator (UserId)
+import Backend.Env (envPool)
+import Common.Auth (UserResponse)
 import Relude
-import Snap.Core (Method (GET), Snap, method)
+import Servant.Server (err401)
 
-handler :: AuthEnv -> Snap ()
-handler env = method GET $ do
-  uid   <- requireUser env
-  mUser <- liftIO $ loadUserResponse (aePool env) uid
-  case mUser of
-    Nothing -> errorStatus 401 "Unauthorized"
-    Just ur -> writeJson ur
+handler :: UserId -> App UserResponse
+handler uid = do
+  pool  <- asks envPool
+  mUser <- liftIO (loadUserResponse pool uid)
+  maybe (throwApp err401) pure mUser
