@@ -40,9 +40,9 @@ Refer to these files for context on specific areas. Each plan starts with a `Sta
 
 ## Cross-cutting Conventions
 
+- **Haskell:** Follow the conventions in [Haskell.md](plans/Haskell.md) (relude, default extensions, cabal stanzas, explicit imports).
 - **Routes:** Defined in `common/src/Common/Route.hs`. Use type-safe API calls via `Frontend.Api.apiUrl` (no raw string URLs in `frontend/`). Naming: `FrontendRoute_X`, `BackendRoute_X`, `ApiRoute_X`.
 - **Schema:** One `Backend.Schema.X` module per table; `LucianaDb` in `Backend.Schema.Db`.
-- **Prelude:** Use `relude` everywhere. Explicit import lists except for `import Relude`.
 
 ## Ignore Paths
 
@@ -80,6 +80,7 @@ Refer to these files for context on specific areas. Each plan starts with a `Sta
     - **Command Transparency:** When running long-running or complex commands (e.g., `nix-build`, `ob watch`), always share the command being run and, upon completion or failure, provide a summary of the output.
     - **Diagnostic Tail:** If a background process is used, periodically check its progress with `read_background_output` and report any new significant log entries.
     - **Failure Post-mortems:** If a task fails or the agent becomes "stuck", perform a "Strategic Re-evaluation" by listing current assumptions and proposing an alternative path.
+12. **Haskell Standards:** Always adhere to the coding standards, default extensions, and prelude settings defined in [Haskell.md](plans/Haskell.md).
 
 ## Common Commands
 
