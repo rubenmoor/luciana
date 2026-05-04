@@ -33,7 +33,7 @@ The Obelisk scaffold already gives us **Snap** plus `obelisk-backend` and `obeli
 | Concern | Library | Why |
 |---|---|---|
 | Frontend page routing | `obelisk-route` (already in) | Type-safe `FrontendRoute` GADT shared with the backend; SPA navigation falls out for free. |
-| JSON API description | `servant` (`Common.Api`) | Single API type drives the server, the frontend client, JSON shapes, method, status, and Content-Type. See [`backend.md`](backend.md). |
+| JSON API description | `servant` (`Common.Api`) | Single API type drives the server, the frontend client, JSON shapes, method, status, and Content-Type. See [`backend-spec.md`](backend-spec.md). |
 | HTTP handler glue | `servant-snap` over `snap-core` / `snap-server` | `serveSnapWithContext` plugs servant into the Snap pipeline Obelisk already gives us — no need to introduce warp. Pattern mirrors the book-engine project. |
 | JSON | `aeson` | De-facto standard; pairs naturally with `deriving via` for newtype wrappers. |
 | Logging | `co-log` or `katip` | `co-log` is lighter and composes cleanly with `relude`'s `WithLog`; `katip` if we want structured/JSON logs and severity contexts out of the box. |
