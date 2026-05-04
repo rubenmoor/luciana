@@ -52,6 +52,9 @@ library
     Backend.Auth.Session
     Backend.Db
     Backend.Env
+    Backend.Notifications
+    Backend.Period
+    Backend.Push
     Backend.RateLimit.Combinator
     Backend.Schema.Db
     Backend.Schema.Migration

@@ -11,6 +11,8 @@ import Backend.Auth.Session (createSession)
 import Backend.Db (withConn)
 import Backend.Env (envCookieSecure, envPool)
 import Backend.RateLimit.Combinator (RateBucket, clearBucket)
+import Backend.Schema.Db (lucianaDb)
+import Backend.Schema.User (UserT (..))
 import Common.Auth
   ( LoginRequest (lrPassword, lrUsername)
   , LoginResult (InvalidCredentials, LoginOk)
@@ -20,7 +22,10 @@ import Common.Auth
   )
 import qualified Crypto.BCrypt as BCrypt
 import Data.Time (getCurrentTime)
-import Database.PostgreSQL.Simple (Connection, Only (Only), query)
+import Database.Beam
+import Database.Beam.Backend.SQL.Types (SqlSerial (..))
+import Database.Beam.Postgres (runBeamPostgres)
+import Database.PostgreSQL.Simple (Connection)
 import Relude
 import Servant.API (Header, Headers, addHeader, noHeader)
 import Servant.Server (err500)
@@ -55,10 +60,10 @@ verifyPassword pw hashed =
 -- | Case-insensitive lookup matches the unique index on @lower(username)@.
 lookupUserForLogin :: Connection -> Username -> IO (Maybe (Int64, Text))
 lookupUserForLogin conn username = do
-  rows <- query conn
-    "SELECT id, password_hash FROM users WHERE lower(username) = lower(?)"
-    (Only (unUsername username))
-    :: IO [(Int64, Text)]
-  pure $ case rows of
-    [(uid, h)] -> Just (uid, h)
-    _          -> Nothing
+  mUser <- runBeamPostgres conn $ runSelectReturningOne $ select $ do
+    u <- all_ (_users lucianaDb)
+    guard_ (lower_ (userUsername u) ==. lower_ (val_ (unUsername username)))
+    pure u
+  pure $ ffor mUser $ \u ->
+    let UserId (SqlSerial uid) = primaryKey u
+    in (uid, userPasswordHash u)

@@ -12,6 +12,8 @@ import Backend.Auth.Session (createSession)
 import Backend.Db (withConn)
 import Backend.Env (envCookieSecure, envPool)
 import Backend.RateLimit.Combinator (RateBucket)
+import Backend.Schema.Db (lucianaDb)
+import Backend.Schema.User (TZName (TZName), UserT (..))
 import Common.Auth
   ( RegisterRequest (rrLocale, rrPassword, rrTimezone, rrUsername)
   , RegisterResult (RegisterOk, UsernameTaken)
@@ -19,15 +21,16 @@ import Common.Auth
   , unPassword
   , unUsername
   )
-import Common.I18n (Locale, localeToText)
+import Common.I18n (Locale)
 import Control.Exception (try)
 import qualified Crypto.BCrypt as BCrypt
 import Data.Time (getCurrentTime)
+import Database.Beam
+import Database.Beam.Backend.SQL.Types (SqlSerial (..))
+import Database.Beam.Postgres (runBeamPostgres)
 import Database.PostgreSQL.Simple
   ( Connection
-  , Only (Only)
   , SqlError
-  , query
   , sqlState
   )
 import Relude
@@ -72,11 +75,18 @@ hashPassword pw = do
 
 insertUser :: Connection -> Username -> Text -> Locale -> Text -> IO Int64
 insertUser conn username hashed loc tz = do
-  rows <- query conn
-    "INSERT INTO users (username, password_hash, locale, timezone) \
-    \VALUES (?, ?, ?, ?) RETURNING id"
-    (unUsername username, hashed, localeToText loc, tz)
-    :: IO [Only Int64]
-  case rows of
-    [Only uid] -> pure uid
-    _          -> error "INSERT users RETURNING id produced no row"
+  now <- getCurrentTime
+  mU <- runBeamPostgres conn $ runInsertReturningList $ insert (_users lucianaDb) $
+    insertExpressions
+      [ User
+          { userId           = default_
+          , userUsername     = val_ (unUsername username)
+          , userPasswordHash = val_ hashed
+          , userLocale       = val_ loc
+          , userTimezone     = val_ (TZName tz)
+          , userCreatedAt    = val_ now
+          }
+      ]
+  case mU of
+    [u] -> let UserId (SqlSerial uid) = primaryKey u in pure uid
+    _   -> error "INSERT users RETURNING id produced no row"

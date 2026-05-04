@@ -3,10 +3,13 @@ module Backend.Db
   , withDbPool
   , withConn
   , loadDbUrl
+  , runBeam
+  , Pg
   ) where
 
 import Control.Exception (bracket)
 import Data.Pool (Pool, createPool, destroyAllResources, withResource)
+import Database.Beam.Postgres (Pg, runBeamPostgres)
 import Database.PostgreSQL.Simple (Connection, close, connectPostgreSQL)
 import Obelisk.ExecutableConfig.Lookup (getConfigs)
 import Relude
@@ -24,6 +27,9 @@ withDbPool url action =
 
 withConn :: DbPool -> (Connection -> IO a) -> IO a
 withConn (DbPool p) = withResource p
+
+runBeam :: DbPool -> Pg a -> IO a
+runBeam (DbPool p) action = withResource p $ \conn -> runBeamPostgres conn action
 
 loadDbUrl :: IO ByteString
 loadDbUrl = do

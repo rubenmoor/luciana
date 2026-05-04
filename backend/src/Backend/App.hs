@@ -2,9 +2,11 @@ module Backend.App
   ( App
   , runApp
   , throwApp
+  , runBeamApp
   ) where
 
-import Backend.Env (Env)
+import Backend.Db (Pg, runBeam)
+import Backend.Env (Env (envPool))
 import Relude
 import qualified Servant.Server as Servant
 import Snap.Core (Snap)
@@ -25,3 +27,8 @@ runApp = flip runReaderT
 -- helper that calls @finishWith@ under the hood.
 throwApp :: Servant.ServantErr -> App a
 throwApp = lift . Servant.throwError
+
+runBeamApp :: Pg a -> App a
+runBeamApp action = do
+  pool <- asks envPool
+  liftIO $ runBeam pool action

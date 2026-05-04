@@ -19,12 +19,24 @@ module Common.Api
   , RateLimit
   , RoutesApi
   , RoutesAuth
+  , RoutesPeriod
+  , RoutesNotifications
+  , RoutesPush
   , apiBase
   , authPath
   , registerPath
   , loginPath
   , logoutPath
   , mePath
+  , periodPath
+  , statusPath
+  , entriesPath
+  , entryPath
+  , notificationsPath
+  , prefsPath
+  , pushPath
+  , subscribePath
+  , unsubscribePath
   ) where
 
 import Common.Auth
@@ -34,17 +46,37 @@ import Common.Auth
   , RegisterResult
   , UserResponse
   )
+import Common.Notifications
+  ( NotificationPrefsResponse
+  )
+import Common.Period
+  ( CreatePeriodEntryResponse
+  , PeriodEntryId
+  , PeriodEntryRequest
+  , PeriodEntryResponse
+  , PeriodStatusResponse
+  )
+import Common.Push
+  ( PushSubscribeRequest
+  , PushUnsubscribeRequest
+  )
+import Data.Time (Day)
 import GHC.TypeLits (Symbol)
 import Relude
 import Servant.API
   ( (:<|>)
   , (:>)
+  , Capture
+  , Delete
   , Get
   , Header
   , Headers
   , JSON
   , NoContent
+  , Patch
   , Post
+  , Put
+  , QueryParam
   , ReqBody
   , StdMethod (POST)
   , Verb
@@ -63,7 +95,12 @@ data AuthRequired (tag :: k)
 -- can do so.
 data RateLimit (bucket :: Symbol)
 
-type RoutesApi = "api" :> RoutesAuth
+type RoutesApi = "api" :>
+  (    RoutesAuth
+  :<|> RoutesPeriod
+  :<|> RoutesNotifications
+  :<|> RoutesPush
+  )
 
 type RoutesAuth = "auth" :>
   (    RateLimit "register"
@@ -82,6 +119,24 @@ type RoutesAuth = "auth" :>
          :> Get '[JSON] UserResponse
   )
 
+type RoutesPeriod = "period" :>
+  (    AuthRequired "session" :> "status" :> Get '[JSON] PeriodStatusResponse
+  :<|> AuthRequired "session" :> "entries" :> QueryParam "limit" Int :> QueryParam "before" Day :> Get '[JSON] [PeriodEntryResponse]
+  :<|> AuthRequired "session" :> "entries" :> ReqBody '[JSON] PeriodEntryRequest :> Post '[JSON] CreatePeriodEntryResponse
+  :<|> AuthRequired "session" :> "entry" :> Capture "id" PeriodEntryId :> ReqBody '[JSON] PeriodEntryRequest :> Patch '[JSON] NoContent
+  :<|> AuthRequired "session" :> "entry" :> Capture "id" PeriodEntryId :> Delete '[JSON] NoContent
+  )
+
+type RoutesNotifications = "notifications" :>
+  (    AuthRequired "session" :> "prefs" :> Get '[JSON] NotificationPrefsResponse
+  :<|> AuthRequired "session" :> "prefs" :> ReqBody '[JSON] NotificationPrefsResponse :> Put '[JSON] NotificationPrefsResponse
+  )
+
+type RoutesPush = "push" :>
+  (    AuthRequired "session" :> "subscribe" :> ReqBody '[JSON] PushSubscribeRequest :> Post '[JSON] NoContent
+  :<|> AuthRequired "session" :> "unsubscribe" :> ReqBody '[JSON] PushUnsubscribeRequest :> Post '[JSON] NoContent
+  )
+
 -- | URL path constants. Must match the path-segment literals used in
 -- 'RoutesApi' above; the backend's servant routing parses one half,
 -- the frontend's 'Frontend.Api' builds requests against the other.
@@ -96,3 +151,18 @@ registerPath = "/register"
 loginPath    = "/login"
 logoutPath   = "/logout"
 mePath       = "/me"
+
+periodPath, statusPath, entriesPath, entryPath :: Text
+periodPath  = "/period"
+statusPath  = "/status"
+entriesPath = "/entries"
+entryPath   = "/entry"
+
+notificationsPath, prefsPath :: Text
+notificationsPath = "/notifications"
+prefsPath         = "/prefs"
+
+pushPath, subscribePath, unsubscribePath :: Text
+pushPath        = "/push"
+subscribePath   = "/subscribe"
+unsubscribePath = "/unsubscribe"

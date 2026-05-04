@@ -47,7 +47,7 @@ newtype Password = Password { unPassword :: Text }
 mkPassword :: Text -> Either AuthError Password
 mkPassword raw =
   let n = T.length raw
-  in if | n < 8   -> Left InvalidPassword
+  in if | n == 0  -> Left InvalidPassword
         | n > 200 -> Left InvalidPassword
         | otherwise -> Right (Password raw)
 

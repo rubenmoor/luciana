@@ -1,43 +1,53 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module Frontend.Api
   ( apiUrl
-  , registerUrl
-  , loginUrl
-  , logoutUrl
-  , meUrl
+  , apiClients
   ) where
 
-import Common.Api (apiBase, authPath, loginPath, logoutPath, mePath, registerPath)
-import Common.Route
-  ( BackendRoute
-  , FrontendRoute
-  , fullRouteEncoder
-  )
-import Obelisk.Route
-  ( Encoder
-  , FullRoute
-  , PageName
-  , R
-  , checkEncoder
-  , renderBackendRoute
-  )
+import Common.Api (AuthRequired, RateLimit, RoutesApi)
+import Common.Route (BackendRoute, FrontendRoute, fullRouteEncoder)
+import Obelisk.Route (Encoder, FullRoute, PageName, R, checkEncoder, renderBackendRoute)
+import Reflex.Dom.Core (Dynamic)
 import Relude
+import Servant.API ((:>))
+import Servant.Reflex (BaseUrl, Client, HasClient (..), client)
 
--- | Render a frontend-encoded backend route (currently used for the
--- VAPID public-key endpoint, which sits outside @/api/*@).
 apiUrl :: R BackendRoute -> Text
 apiUrl = renderBackendRoute validEncoder
 
-validEncoder
-  :: Encoder Identity Identity (R (FullRoute BackendRoute FrontendRoute)) PageName
+validEncoder :: Encoder Identity Identity (R (FullRoute BackendRoute FrontendRoute)) PageName
 validEncoder = case checkEncoder fullRouteEncoder of
   Right e  -> e
   Left err -> error $ "Frontend.Api: fullRouteEncoder failed check: " <> err
 
--- | URLs for the JSON API endpoints. Composed from named segments in
--- 'Common.Api' so the path strings stay in lock-step with the servant
--- @RoutesApi@ type the backend dispatches on.
-registerUrl, loginUrl, logoutUrl, meUrl :: Text
-registerUrl = apiBase <> authPath <> registerPath
-loginUrl    = apiBase <> authPath <> loginPath
-logoutUrl   = apiBase <> authPath <> logoutPath
-meUrl       = apiBase <> authPath <> mePath
+-- | Derived servant-reflex clients for the entire JSON API.
+-- In servant-reflex-0.4.0, 'client' takes 4 arguments:
+-- 1. api proxy, 2. m proxy, 3. tag proxy, 4. base url dynamic.
+-- The timeline 't' is inferred from the base url.
+apiClients
+  :: forall t m. (HasClient t m RoutesApi ())
+  => Dynamic t BaseUrl
+  -> Client t m RoutesApi ()
+apiClients base = client (Proxy @RoutesApi) (Proxy @m) (Proxy @()) base
+
+-- | Client-side instances for custom combinators. Both are transparent
+-- to the client: 'AuthRequired' relies on the browser-managed session
+-- cookie, and 'RateLimit' is tracked server-side by IP.
+instance (HasClient t m sub tag) => HasClient t m (AuthRequired reqTag :> sub) tag where
+  type Client t m (AuthRequired reqTag :> sub) tag = Client t m sub tag
+  clientWithRoute _ m p = clientWithRoute (Proxy @sub) m p
+  clientWithRouteAndResultHandler _ m p = clientWithRouteAndResultHandler (Proxy @sub) m p
+
+instance (HasClient t m sub tag) => HasClient t m (RateLimit bucket :> sub) tag where
+  type Client t m (RateLimit bucket :> sub) tag = Client t m sub tag
+  clientWithRoute _ m p = clientWithRoute (Proxy @sub) m p
+  clientWithRouteAndResultHandler _ m p = clientWithRouteAndResultHandler (Proxy @sub) m p

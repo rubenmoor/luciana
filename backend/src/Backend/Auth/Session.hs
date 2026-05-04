@@ -6,49 +6,52 @@ module Backend.Auth.Session
   , deleteExpiredSessions
   ) where
 
-import Data.Time (UTCTime)
-import Database.PostgreSQL.Simple
-  ( Connection
-  , Only (Only)
-  , execute
-  , execute_
-  , query
-  )
-import Database.PostgreSQL.Simple.Types (Binary (Binary))
+import Backend.Schema.Db (lucianaDb)
+import Backend.Schema.Session
+import Backend.Schema.User (PrimaryKey (UserId))
+import Data.Time (UTCTime, getCurrentTime)
+import Database.Beam
+import Database.Beam.Backend.SQL.Types (SqlSerial (..))
+import Database.Beam.Postgres (Postgres, runBeamPostgres)
+import Database.PostgreSQL.Simple (Connection)
 import Relude
 
 createSession :: Connection -> Int64 -> ByteString -> UTCTime -> IO ()
 createSession conn uid tokenHash expiresAt = do
-  _ <- execute conn
-    "INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (?, ?, ?)"
-    (uid, Binary tokenHash, expiresAt)
-  pass
+  now <- getCurrentTime
+  runBeamPostgres conn $ runInsert $ insert (_sessions lucianaDb) $
+    insertExpressions
+      [ Session
+          { sessionId        = default_
+          , sessionUserId    = val_ (UserId (SqlSerial uid))
+          , sessionTokenHash = val_ tokenHash
+          , sessionCreatedAt = val_ now
+          , sessionExpiresAt = val_ expiresAt
+          }
+      ]
 
 lookupSession :: Connection -> ByteString -> IO (Maybe (Int64, UTCTime))
 lookupSession conn tokenHash = do
-  rows <-
-    query conn
-      "SELECT user_id, expires_at FROM sessions \
-      \WHERE token_hash = ? AND expires_at > now()"
-      (Only (Binary tokenHash))
-  pure $ case rows of
-    [(uid, expiresAt)] -> Just (uid, expiresAt)
-    _                  -> Nothing
+  mSession <- runBeamPostgres conn $ runSelectReturningOne $ select $ do
+    s <- all_ (_sessions lucianaDb)
+    guard_ (sessionTokenHash s ==. val_ tokenHash &&. sessionExpiresAt s >. now_())
+    pure s
+  pure $ case mSession of
+    Just s -> let UserId (SqlSerial uid) = sessionUserId s in Just (uid, sessionExpiresAt s)
+    Nothing -> Nothing
 
 deleteSession :: Connection -> ByteString -> IO ()
-deleteSession conn tokenHash = do
-  _ <- execute conn
-    "DELETE FROM sessions WHERE token_hash = ?"
-    (Only (Binary tokenHash))
-  pass
+deleteSession conn tokenHash =
+  runBeamPostgres conn $ runDelete $ delete (_sessions lucianaDb) $ \s ->
+    sessionTokenHash s ==. val_ tokenHash
 
 bumpSession :: Connection -> ByteString -> UTCTime -> IO ()
-bumpSession conn tokenHash newExpiry = do
-  _ <- execute conn
-    "UPDATE sessions SET expires_at = ? WHERE token_hash = ?"
-    (newExpiry, Binary tokenHash)
-  pass
+bumpSession conn tokenHash newExpiry =
+  runBeamPostgres conn $ runUpdate $ update (_sessions lucianaDb)
+    (\s -> [ sessionExpiresAt s <-. val_ newExpiry ])
+    (\s -> sessionTokenHash s ==. val_ tokenHash)
 
 deleteExpiredSessions :: Connection -> IO Int64
 deleteExpiredSessions conn =
-  execute_ conn "DELETE FROM sessions WHERE expires_at < now()"
+  runBeamPostgres conn $ runDelete $ delete (_sessions lucianaDb) $ \s ->
+    sessionExpiresAt s <. now_()

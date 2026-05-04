@@ -14,11 +14,13 @@ module Backend.Auth
 
 import Backend.Auth.RateLimit ()
 import Backend.Auth.Session (deleteExpiredSessions)
-import Backend.Db (DbPool, withConn)
+import Backend.Db (DbPool, runBeam, withConn)
 import Backend.Env (Env, envPool)
+import Backend.Schema.Db (lucianaDb)
+import Backend.Schema.User (TZName (unTZName), UserT (..))
 import Common.Auth (UserResponse (UserResponse))
-import Common.I18n (localeFromText)
-import Database.PostgreSQL.Simple (Only (Only), query)
+import Database.Beam
+import Database.Beam.Backend.SQL.Types (SqlSerial (..))
 import Control.Concurrent (ThreadId, forkIO, threadDelay)
 import qualified Crypto.Hash as Hash
 import qualified Crypto.Random.Entropy as Entropy
@@ -68,13 +70,17 @@ shouldBump now expiresAt =
 -- User lookup (shared by Login, Register, Me)
 
 loadUserResponse :: DbPool -> Int64 -> IO (Maybe UserResponse)
-loadUserResponse pool uid = withConn pool $ \c -> do
-  rows <- query c
-    "SELECT id, username, locale, timezone FROM users WHERE id = ?"
-    (Only uid)
-    :: IO [(Int64, Text, Text, Text)]
-  pure $ case rows of
-    [(i, u, l, t)] -> case localeFromText l of
-      Just loc -> Just (UserResponse i u loc t)
-      Nothing  -> Nothing
-    _ -> Nothing
+loadUserResponse pool uid = do
+  mUser <- runBeam pool $ runSelectReturningOne $ select $ do
+    u <- all_ (_users lucianaDb)
+    guard_ (userId u ==. val_ (SqlSerial uid))
+    pure u
+  pure $ toResponse <$> mUser
+
+toResponse :: UserT Identity -> UserResponse
+toResponse u = UserResponse
+  { urId       = let SqlSerial i = userId u in i
+  , urUsername = userUsername u
+  , urLocale   = userLocale u
+  , urTimezone = unTZName (userTimezone u)
+  }

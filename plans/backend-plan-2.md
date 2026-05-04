@@ -1,6 +1,6 @@
 # backend-plan-2.md
 
-Status: spec
+Status: implemented
 
 Implementation plan to finish the backend migration, picking up from the work-in-progress state in commit `3a76bfc`.
 

@@ -20,6 +20,8 @@ library
                , obelisk-route
                , reflex-dom-core
                , relude
+               , servant
+               , servant-reflex
                , text
                , time
   exposed-modules:

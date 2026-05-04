@@ -75,6 +75,9 @@
             pgInit
             pgUp
             pgDown
+            ghc
+            cabal-install
+            haskell-language-server
           ] ++ nativeDeps;
 
           shellHook = ''

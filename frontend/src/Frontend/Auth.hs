@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Frontend.Auth
   ( AuthState (..)
@@ -25,9 +26,8 @@ import Common.Auth
   )
 import Common.Route (FrontendRoute (FrontendRoute_Login))
 import qualified Data.Aeson as Aeson
-import Data.Default (def)
 import qualified Data.Text.Encoding as TE
-import Frontend.Api (loginUrl, logoutUrl, meUrl, registerUrl)
+import Frontend.Api (apiClients)
 import Frontend.Toast (ToastMsg (..))
 import Language.Javascript.JSaddle
   ( MonadJSM
@@ -38,34 +38,14 @@ import Language.Javascript.JSaddle
 import Obelisk.Route (R, pattern (:/))
 import Obelisk.Route.Frontend (SetRoute, setRoute)
 import Reflex.Dom.Core
-  ( DomBuilder
-  , Dynamic
-  , Event
-  , MonadHold
-  , PerformEvent
-  , Performable
-  , PostBuild
-  , TriggerEvent
-  , current
-  , dyn_
-  , ffor
-  , fmapMaybe
-  , getPostBuild
-  , holdDyn
-  , leftmost
-  , updated
-  , (<@)
-  )
 import Reflex.Dom.Xhr
-  ( XhrRequest (XhrRequest)
-  , XhrResponse
-  , decodeXhrResponse
-  , performRequestAsync
-  , postJson
+  ( XhrResponse
   , _xhrResponse_responseText
   , _xhrResponse_status
   )
 import Relude
+import Servant.API ((:<|>) ((:<|>)), Header, Headers (..), NoContent)
+import Servant.Reflex (BaseUrl (BasePath), ReqResult (..))
 
 data AuthState
   = AuthLoading
@@ -73,42 +53,37 @@ data AuthState
   | AuthSignedIn UserResponse
   deriving stock (Eq, Show)
 
+-- | Auth clients product.
+-- In servant-reflex-0.4.0, the tag is set to () in Frontend.Api.
+-- ReqBody routes take Dynamic (Either Text body) and Event trigger.
+authClients
+  :: forall t m. (MonadWidget t m)
+  => ( (Dynamic t (Either Text RegisterRequest) -> Event t () -> m (Event t (ReqResult () (Headers '[Header "Set-Cookie" Text] RegisterResult))))
+     :<|> (Dynamic t (Either Text LoginRequest) -> Event t () -> m (Event t (ReqResult () (Headers '[Header "Set-Cookie" Text] LoginResult))))
+     :<|> (Event t () -> m (Event t (ReqResult () (Headers '[Header "Set-Cookie" Text] NoContent))))
+     :<|> (Event t () -> m (Event t (ReqResult () UserResponse)))
+     )
+authClients = let (c :<|> _) = apiClients (pure $ BasePath "/") in c
+
 ----------------------------------------------------------------------
 -- currentAuth: GET /api/auth/me on PostBuild and on every refresh.
 
 currentAuth
-  :: ( PostBuild t m
-     , MonadHold t m
-     , PerformEvent t m
-     , TriggerEvent t m
-     , MonadJSM (Performable m)
-     )
+  :: ( MonadWidget t m )
   => Event t ()
   -> m (Dynamic t AuthState)
 currentAuth refreshEv = do
   pb <- getPostBuild
   let trigger = leftmost [pb, refreshEv]
-      reqEv   = trigger $> meRequest
-  respEv <- performRequestAsync reqEv
-  let stateEv = ffor respEv $ \r ->
-        if _xhrResponse_status r == 200
-          then maybe AuthAnon AuthSignedIn (decodeXhrResponse r)
-          else AuthAnon
+      (_ :<|> _ :<|> _ :<|> me) = authClients
+  respEv <- me trigger
+  let stateEv = ffor respEv $ \case
+        ResponseSuccess _ u _ -> AuthSignedIn u
+        _                     -> AuthAnon
   holdDyn AuthLoading stateEv
-
-meRequest :: XhrRequest ()
-meRequest = XhrRequest "GET" meUrl def
 
 ----------------------------------------------------------------------
 -- performLogin / performRegister / performLogout
---
--- Login/Register decode the typed JSON result from the response body.
--- Application-level outcomes (invalid credentials, username taken)
--- become 'LoginInvalid' / 'RegisterTaken' (handled inline by the page
--- as red text under the form). HTTP-layer failures (4xx, 5xx, decode
--- failure) become the @*Unexpected@ branch carrying a 'ToastMsg' and
--- optional diagnostic JSON for the renderer to display behind a
--- toggle.
 
 data LoginError
   = LoginInvalid
@@ -121,79 +96,55 @@ data RegisterError
   deriving stock (Eq, Show)
 
 performLogin
-  :: ( PerformEvent t m
-     , TriggerEvent t m
-     , MonadJSM (Performable m)
-     )
+  :: ( MonadWidget t m )
   => Event t LoginRequest
   -> m (Event t (Either LoginError UserResponse))
 performLogin reqEv = do
-  resp <- performRequestAsync (postJson loginUrl <$> reqEv)
-  pure (decodeLogin loginUrl <$> resp)
-
-decodeLogin :: Text -> XhrResponse -> Either LoginError UserResponse
-decodeLogin url r
-  | _xhrResponse_status r == 429 =
-      Left (LoginUnexpected MsgRateLimited (diagnostic url "POST" r))
-  | _xhrResponse_status r == 400 =
-      Left (LoginUnexpected MsgBadRequest (diagnostic url "POST" r))
-  | _xhrResponse_status r >= 500 =
-      Left (LoginUnexpected MsgServerError (diagnostic url "POST" r))
-  | not (statusOk r) =
-      Left (LoginUnexpected MsgServerError (diagnostic url "POST" r))
-  | otherwise = case decodeXhrResponse r of
-      Just (LoginOk u)        -> Right u
-      Just InvalidCredentials -> Left LoginInvalid
-      Nothing                 ->
-        Left (LoginUnexpected MsgServerError (diagnostic url "POST" r))
+  let (_ :<|> login :<|> _ :<|> _) = authClients
+  bodyD <- holdDyn (Left "no-login-yet") (Right <$> reqEv)
+  respEv <- login bodyD (() <$ reqEv)
+  pure $ ffor respEv $ \case
+    ResponseSuccess _ (Headers result _) _ -> case result of
+      LoginOk u          -> Right u
+      InvalidCredentials -> Left LoginInvalid
+    ResponseFailure _ _ r ->
+      Left (LoginUnexpected (statusToMsg r) (diagnostic "/api/auth/login" "POST" r))
+    RequestFailure _ _ ->
+      Left (LoginUnexpected MsgServerError Nothing)
 
 performRegister
-  :: ( PerformEvent t m
-     , TriggerEvent t m
-     , MonadJSM (Performable m)
-     )
+  :: ( MonadWidget t m )
   => Event t RegisterRequest
   -> m (Event t (Either RegisterError UserResponse))
 performRegister reqEv = do
-  resp <- performRequestAsync (postJson registerUrl <$> reqEv)
-  pure (decodeRegister registerUrl <$> resp)
-
-decodeRegister :: Text -> XhrResponse -> Either RegisterError UserResponse
-decodeRegister url r
-  | _xhrResponse_status r == 429 =
-      Left (RegisterUnexpected MsgRateLimited (diagnostic url "POST" r))
-  | _xhrResponse_status r == 400 =
-      Left (RegisterUnexpected MsgBadRequest (diagnostic url "POST" r))
-  | _xhrResponse_status r >= 500 =
-      Left (RegisterUnexpected MsgServerError (diagnostic url "POST" r))
-  | not (statusOk r) =
-      Left (RegisterUnexpected MsgServerError (diagnostic url "POST" r))
-  | otherwise = case decodeXhrResponse r of
-      Just (RegisterOk u) -> Right u
-      Just UsernameTaken  -> Left RegisterTaken
-      Nothing             ->
-        Left (RegisterUnexpected MsgServerError (diagnostic url "POST" r))
+  let (register :<|> _ :<|> _ :<|> _) = authClients
+  bodyD <- holdDyn (Left "no-register-yet") (Right <$> reqEv)
+  respEv <- register bodyD (() <$ reqEv)
+  pure $ ffor respEv $ \case
+    ResponseSuccess _ (Headers result _) _ -> case result of
+      RegisterOk u  -> Right u
+      UsernameTaken -> Left RegisterTaken
+    ResponseFailure _ _ r ->
+      Left (RegisterUnexpected (statusToMsg r) (diagnostic "/api/auth/register" "POST" r))
+    RequestFailure _ _ ->
+      Left (RegisterUnexpected MsgServerError Nothing)
 
 performLogout
-  :: ( PerformEvent t m
-     , TriggerEvent t m
-     , MonadJSM (Performable m)
-     )
+  :: ( MonadWidget t m )
   => Event t ()
   -> m (Event t ())
 performLogout ev = do
-  resp <- performRequestAsync (ev $> logoutRequest)
+  let (_ :<|> _ :<|> logout :<|> _) = authClients
+  resp <- logout ev
   pure (() <$ resp)
 
-logoutRequest :: XhrRequest ()
-logoutRequest = XhrRequest "POST" logoutUrl def
+statusToMsg :: XhrResponse -> ToastMsg
+statusToMsg r
+  | _xhrResponse_status r == 429 = MsgRateLimited
+  | _xhrResponse_status r == 400 = MsgBadRequest
+  | otherwise = MsgServerError
 
-statusOk :: XhrResponse -> Bool
-statusOk r = let s = _xhrResponse_status r in s >= 200 && s < 300
-
--- | Build a diagnostic JSON object from an HTTP response. The body
--- field embeds parsed JSON when the response text decodes as JSON,
--- and the raw text otherwise.
+-- | Build a diagnostic JSON object from an HTTP response.
 diagnostic :: Text -> Text -> XhrResponse -> Maybe Aeson.Value
 diagnostic url method r = Just $ Aeson.object
   [ ("status", Aeson.toJSON (_xhrResponse_status r))

@@ -183,7 +183,7 @@ frontend/src/Frontend/
 Performed in `Common.Auth` so frontend and backend agree:
 
 - Username: any non-empty string after trimming surrounding whitespace, ≤ 64 chars. Case-sensitive on storage but compared case-insensitively for the uniqueness check (the unique index is on `lower(username)` — see [`schema.md`](schema.md)). No restrictions on which characters appear; the user can pick whatever they want.
-- Password: 8 ≤ length ≤ 200. No composition rules (per current NIST guidance — length over complexity).
+- Password: any non-empty string, ≤ 200. No composition rules. (Minimum length of 8 removed to avoid 'stuck' UI on short inputs).
 
 ## Open
 

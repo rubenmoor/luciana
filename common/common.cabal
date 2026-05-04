@@ -18,6 +18,9 @@ library
     Common.Api
     Common.Auth
     Common.I18n
+    Common.Notifications
+    Common.Period
+    Common.Push
     Common.Route
   default-extensions:
     NoImplicitPrelude

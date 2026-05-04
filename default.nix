@@ -42,5 +42,14 @@ project ./. ({ pkgs, ... }: {
       rev = "4850305bd586e887229954ad9dfccb649c497f8e";
       sha256 = "1ins0j4vd3cmf2dgh601b4wjqky79myz1245v2b59m5zsp11am01";
     }) {}));
+    servant-reflex = self.callCabal2nix "servant-reflex" (pkgs.fetchFromGitHub {
+      owner = "rubenmoor";
+      repo = "servant-reflex";
+      rev = "9dae2cc37060ca5b7b647134b7bdd0bd871a1213";
+      sha256 = "031kric5g8r2vp8vpva02c5fxyb65vivsc3bn474bnsgp55pisfz";
+    }) {};
+    jose = dontCheck (self.callHackage "jose" "0.10" {});
+    servant = dontCheck (self.callHackage "servant" "0.19.1" {});
+    servant-auth = dontCheck (doJailbreak (self.callHackage "servant-auth" "0.4.1.0" {}));
   };
 })
