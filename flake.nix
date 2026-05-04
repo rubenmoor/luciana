@@ -68,6 +68,10 @@
       in
       {
         devShells.default = pkgs.mkShell {
+          # Use the shell provided by your existing Obelisk project
+          # This ensures GHC 8.10.7 and all pinned dependencies are used
+          inputsFrom = [ (import ./default.nix { inherit system; }).shells.ghc ];
+
           buildInputs = with pkgs; [
             nodejs_20
             google-cloud-sdk # Essential for 'gcloud auth' and Gemini integration
@@ -75,9 +79,8 @@
             pgInit
             pgUp
             pgDown
-            ghc
             cabal-install
-            haskell-language-server
+            (import ./.obelisk/impl { inherit system; }).nixpkgs.haskell.packages.ghc8107.haskell-language-server
           ] ++ nativeDeps;
 
           shellHook = ''

@@ -1,0 +1,27 @@
+cradle:
+  multi:
+    - path: "./common"
+      config:
+        cradle:
+          cabal:
+            component: "common:lib:common"
+    - path: "./backend/src"
+      config:
+        cradle:
+          cabal:
+            component: "backend:lib:backend"
+    - path: "./backend/src-bin"
+      config:
+        cradle:
+          cabal:
+            component: "backend:exe:backend"
+    - path: "./frontend/src"
+      config:
+        cradle:
+          cabal:
+            component: "frontend:lib:frontend"
+    - path: "./frontend/src-bin"
+      config:
+        cradle:
+          cabal:
+            component: "frontend:exe:frontend"
