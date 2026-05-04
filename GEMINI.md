@@ -75,6 +75,11 @@ Refer to these files for context on specific areas. Each plan starts with a `Sta
     -   Add overrides in `default.nix` if missing or wrong version.
 9.  **No Private Memory:** Do not use the private project memory folder (`.gemini/tmp/luciana/memory/`). All notes, findings, machine-specific quirks, or transient context must be stored explicitly in markdown files within the repository (e.g., in `plans/` or `GEMINI.md`).
 10. **State tracking:** Use `plans/current-state.md` to keep track of the current state of the project and add any issues that pop up during coding that won't be fixed immediately.
+11. **Observability & Error Reporting:**
+    - **Granular Updates:** Use `update_topic` frequently (every 3-5 turns) to keep the user informed of specific sub-tasks.
+    - **Command Transparency:** When running long-running or complex commands (e.g., `nix-build`, `ob watch`), always share the command being run and, upon completion or failure, provide a summary of the output.
+    - **Diagnostic Tail:** If a background process is used, periodically check its progress with `read_background_output` and report any new significant log entries.
+    - **Failure Post-mortems:** If a task fails or the agent becomes "stuck", perform a "Strategic Re-evaluation" by listing current assumptions and proposing an alternative path.
 
 ## Common Commands
 
