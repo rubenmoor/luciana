@@ -24,7 +24,9 @@ Refer to these files for context on specific areas. Each plan starts with a `Sta
 | [schema.md](plans/schema.md) | partial | Postgres tables; some implemented |
 | [database.md](plans/database.md) | partial | beam/postgres setup, pool, migrations |
 | [authentication.md](plans/authentication.md) | implemented | Session cookie, bcrypt, rate-limit |
-| [backend.md](plans/backend.md) | spec | `Env` + `ReaderT` app monad; Snap middleware to keep handlers lean |
+| [backend-spec.md](plans/backend-spec.md) | spec | `Env` + `ReaderT` app monad; Snap middleware to keep handlers lean |
+| [backend-plan-1.md](plans/backend-plan-1.md) | spec | Steps to migrate backend to Servant from scratch |
+| [backend-plan-2.md](plans/backend-plan-2.md) | spec | Steps to finish backend migration from current WIP state |
 | [toasts.md](plans/toasts.md) | implemented | Transient success/error messages (DaisyUI toasts, EventWriter) |
 
 ## Source Map
@@ -52,18 +54,26 @@ Refer to these files for context on specific areas. Each plan starts with a `Sta
 
 ## Instructions
 
-1. **No code without plan:** The current state of the code must always be reflected in `plans/`. Edit or create a plan file first. **Stop and wait for user review** after updating a plan before starting implementation.
-2. **One feature, one file:** Every feature gets its own markdown file in `plans/`.
-3. **Plan-file hierarchy, no redundancy:** `GEMINI.md` is the root. Link to more specific plans rather than restating content.
-4. **Explicit scope:** If changes outside the planned scope are needed, update the plan first.
-5. **Verification loop:**
-   - Inner loop: `ob watch` (assumed running).
-   - Before completion: `nix-build -A ghc.backend --no-out-link` AND `nix-build -A ghcjs.frontend --no-out-link`.
-   - Smoke test: `ob run`, verify route in browser.
-6. **Adding a Haskell dependency:**
-   - Survey package version: `nix-instantiate --eval --strict -E '((import ./.obelisk/impl {}).reflex-platform.ghc.<pkg>).version or "missing"'`.
-   - Add to `build-depends` in `.cabal`.
-   - Add overrides in `default.nix` if missing or wrong version.
+1.  **No code without plan:** The current state of the code must always be reflected in `plans/`. Edit or create a plan file first. **Stop and wait for user review** after updating a plan before starting implementation.
+    -   **Strategic Research:** Use `enter_plan_mode` for high-level design changes, complex Haskell refactors, or new features to draft design documents.
+2.  **One feature, one file:** Every feature gets its own markdown file in `plans/`.
+3.  **Plan-file hierarchy, no redundancy:** `GEMINI.md` is the root. Link to more specific plans rather than restating content.
+4.  **Explicit scope:** If changes outside the planned scope are needed, update the plan first.
+5.  **Investigation & Analysis:** Use the `codebase_investigator` subagent for architectural mapping, understanding system-wide dependencies, or root-cause analysis of complex bugs.
+6.  **Token Efficiency:** 
+    -   Use `grep_search` with narrow scopes and `read_file` with `start_line`/`end_line` to manage context, especially for large Haskell modules or Nix files.
+    -   Utilize `subagents` for repetitive batch tasks or high-volume output commands to keep the main session lean.
+7.  **Verification loop:**
+    -   **Inner loop:** `ob watch` (assumed running).
+    -   **Automated Checks:** Before reporting "done", you MUST autonomously run:
+        -   `nix-build -A ghc.backend --no-out-link`
+        -   `nix-build -A ghcjs.frontend --no-out-link`
+    -   **Smoke test:** `ob run`, verify route in browser.
+8.  **Adding a Haskell dependency:**
+    -   Survey package version: `nix-instantiate --eval --strict -E '((import ./.obelisk/impl {}).reflex-platform.ghc.<pkg>).version or "missing"'`.
+    -   Add to `build-depends` in `.cabal`.
+    -   Add overrides in `default.nix` if missing or wrong version.
+9.  **No Private Memory:** Do not use the private project memory folder (`.gemini/tmp/luciana/memory/`). All notes, findings, machine-specific quirks, or transient context must be stored explicitly in markdown files within the repository (e.g., in `plans/` or `GEMINI.md`).
 
 ## Common Commands
 
