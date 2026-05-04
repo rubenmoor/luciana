@@ -74,6 +74,7 @@ Refer to these files for context on specific areas. Each plan starts with a `Sta
     -   Add to `build-depends` in `.cabal`.
     -   Add overrides in `default.nix` if missing or wrong version.
 9.  **No Private Memory:** Do not use the private project memory folder (`.gemini/tmp/luciana/memory/`). All notes, findings, machine-specific quirks, or transient context must be stored explicitly in markdown files within the repository (e.g., in `plans/` or `GEMINI.md`).
+10. **State tracking:** Use `plans/current-state.md` to keep track of the current state of the project and add any issues that pop up during coding that won't be fixed immediately.
 
 ## Common Commands
 

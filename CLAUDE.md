@@ -94,6 +94,9 @@ frontend/src/Frontend/Widget/ Form.hs
 6. **Verbosity:** don't explain things to me unless I ask.
 7. **Subagents:** use for parallel research; don't spawn for simple
    single-file refactors.
+8. **State tracking:** Use `plans/current-state.md` to keep track of the current
+   state of the project and add any issues that pop up during coding that won't
+   be fixed immediately.
 
 ## Common commands
 
