@@ -85,7 +85,7 @@
 
           shellHook = ''
             export NPM_CONFIG_PREFIX="$PWD/.npm-global"
-            export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+            export PATH="${pkgs.nodejs_20}/bin:$NPM_CONFIG_PREFIX/bin:$PATH"
             
             # Ensure native libraries are visible for credential helpers
             export LD_LIBRARY_PATH="${pkgs.libsecret}/lib:${pkgs.glib.out}/lib:$LD_LIBRARY_PATH"
