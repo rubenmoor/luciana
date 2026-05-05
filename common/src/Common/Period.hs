@@ -14,7 +14,7 @@ module Common.Period
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Time (Day)
 import Relude
-import Servant.API (FromHttpApiData)
+import Servant.API (FromHttpApiData, ToHttpApiData)
 
 data PeriodPhase = Green | Yellow | Red
   deriving stock (Eq, Show, Generic)
@@ -30,7 +30,7 @@ data PeriodStatusResponse = PeriodStatusResponse
 
 newtype PeriodEntryId = PeriodEntryId { unPeriodEntryId :: Int64 }
   deriving stock (Eq, Show, Generic)
-  deriving newtype (FromJSON, ToJSON, FromHttpApiData)
+  deriving newtype (FromJSON, ToJSON, FromHttpApiData, ToHttpApiData)
 
 data PeriodEntryResponse = PeriodEntryResponse
   { perId        :: PeriodEntryId

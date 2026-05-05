@@ -8,13 +8,13 @@ module Backend.Api
   , buildContext
   ) where
 
-import Backend.App (App, runApp)
-import Backend.Auth.Combinator (UserId, sessionAuthHandler)
+import Backend.App (App, AppContext, runApp)
+import Backend.Auth.Combinator (sessionAuthHandler)
 import qualified Backend.Auth.Login as Login
 import qualified Backend.Auth.Logout as Logout
 import qualified Backend.Auth.Me as Me
 import qualified Backend.Auth.Register as Register
-import Backend.Auth.RateLimit (RateLimiter)
+import Backend.Auth.RateLimit ()
 import Backend.Env (Env, envRateLimiter)
 import qualified Backend.Notifications as Notifications
 import qualified Backend.Period as Period
@@ -25,16 +25,10 @@ import Servant.API ((:<|>) ((:<|>)))
 import Servant.Server
   ( Context (..)
   , HasServer (hoistServerWithContext)
-  , ServantErr
   , ServerT
   , serveSnapWithContext
   )
 import Snap.Core (Snap)
-
--- | Servant @Context@ holding (a) the session-cookie auth handler that
--- @AuthRequired "session"@ dispatches to, and (b) the rate limiter the
--- @RateLimit "<bucket>"@ combinator queries.
-type AppContext = '[Snap (Either ServantErr UserId), RateLimiter]
 
 buildContext :: Env -> Context AppContext
 buildContext env = sessionAuthHandler env :. envRateLimiter env :. EmptyContext

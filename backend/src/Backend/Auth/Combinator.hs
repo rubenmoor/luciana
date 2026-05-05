@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -14,20 +15,17 @@ module Backend.Auth.Combinator
   , sessionAuthHandler
   ) where
 
-import Backend.Auth (hashToken)
+import Backend.Auth
+  ( hashToken
+  , newExpiry
+  , shouldBump
+  )
 import Backend.Auth.Cookie (readCookieToken)
 import Backend.Auth.Session (bumpSession, lookupSession)
-import Backend.Db (DbPool, withConn)
+import Backend.Db (runBeam)
 import Backend.Env (Env, envPool)
 import Common.Api (AuthRequired)
-import Data.Time
-  ( NominalDiffTime
-  , UTCTime
-  , addUTCTime
-  , diffUTCTime
-  , getCurrentTime
-  )
-import GHC.TypeLits (KnownSymbol)
+import Data.Time (getCurrentTime)
 import Relude
 import Servant.API ((:>))
 import Servant.Server
@@ -58,8 +56,7 @@ type UserId = Int64
 -- expiry, and yields either a @401@ 'ServantErr' or the 'UserId'.
 type ContextAuth = Snap (Either ServantErr UserId)
 
-instance ( KnownSymbol tag
-         , HasServer api context m
+instance ( HasServer api context m
          , HasContextEntry context ContextAuth
          )
       => HasServer (AuthRequired tag :> api) context m where
@@ -90,28 +87,12 @@ sessionAuthHandler env = do
     Nothing  -> pure (Left err401)
     Just raw -> do
       let h = hashToken raw
-      mFound <- liftIO $ withConn (envPool env) $ \c -> lookupSession c h
+          pool = envPool env
+      mFound <- liftIO $ runBeam pool $ lookupSession h
       case mFound of
         Nothing -> pure (Left err401)
         Just (uid, expiresAt) -> do
           now <- liftIO getCurrentTime
           when (shouldBump now expiresAt) $
-            liftIO $ withConn (envPool env) $ \c ->
-              bumpSession c h (newExpiry now)
+            liftIO $ runBeam pool $ bumpSession h (newExpiry now)
           pure (Right uid)
-
-----------------------------------------------------------------------
--- Session-bump policy (mirrors Backend.Auth's existing constants).
-
-sessionLifetime :: NominalDiffTime
-sessionLifetime = 60 * 60 * 24 * 30
-
-bumpThreshold :: NominalDiffTime
-bumpThreshold = 60 * 60 * 24
-
-newExpiry :: UTCTime -> UTCTime
-newExpiry = addUTCTime sessionLifetime
-
-shouldBump :: UTCTime -> UTCTime -> Bool
-shouldBump now expiresAt =
-  diffUTCTime expiresAt now < (sessionLifetime - bumpThreshold)

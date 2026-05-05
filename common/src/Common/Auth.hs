@@ -23,7 +23,7 @@ import Data.Aeson
   , (.:)
   , (.=)
   )
-import qualified Data.Text as T
+import qualified Data.Text as T (length, strip)
 import Relude
 
 -- | Validated username. Smart constructor in 'mkUsername'.

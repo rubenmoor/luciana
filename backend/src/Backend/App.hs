@@ -3,13 +3,21 @@ module Backend.App
   , runApp
   , throwApp
   , runBeamApp
+  , AppContext
   ) where
 
+import Backend.Auth.RateLimit (RateLimiter)
 import Backend.Db (Pg, runBeam)
 import Backend.Env (Env (envPool))
 import Relude
+import Servant.Server (ServantErr)
 import qualified Servant.Server as Servant
 import Snap.Core (Snap)
+
+-- | Servant @Context@ holding (a) the session-cookie auth handler that
+-- @AuthRequired "session"@ dispatches to, and (b) the rate limiter the
+-- @RateLimit "<bucket>"@ combinator queries.
+type AppContext = '[Snap (Either ServantErr Int64), RateLimiter]
 
 -- | Per-request handler monad for servant routes.
 --

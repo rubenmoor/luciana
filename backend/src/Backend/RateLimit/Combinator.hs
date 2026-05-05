@@ -1,7 +1,10 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -19,8 +22,8 @@ module Backend.RateLimit.Combinator
 
 import Backend.Auth.RateLimit (RateLimiter, checkAndConsume, reset)
 import Common.Api (RateLimit)
-import qualified Data.Text as T
-import GHC.TypeLits (KnownSymbol, symbolVal)
+import qualified Data.Text as T (pack)
+import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
 import Relude
 import Servant.API ((:>))
 import Servant.Server

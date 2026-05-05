@@ -14,7 +14,7 @@ import Database.PostgreSQL.Simple (Connection, close, connectPostgreSQL)
 import Obelisk.ExecutableConfig.Lookup (getConfigs)
 import Relude
 import qualified Data.ByteString.Char8 as BS8
-import qualified Data.Map.Strict as Map
+import qualified Data.Map.Strict as Map (lookup)
 
 newtype DbPool = DbPool (Pool Connection)
 

@@ -20,7 +20,6 @@ module Backend.Schema.NotificationPref
   ) where
 
 import Backend.Schema.User (UserT)
-import Data.Functor.Identity (Identity)
 import Data.Time (TimeOfDay, UTCTime)
 import Database.Beam
   ( Beamable
@@ -34,22 +33,6 @@ import Database.Beam.Backend.Types (BeamBackend)
 import Database.Beam.Migrate (HasDefaultSqlDataType (defaultSqlDataType))
 import Database.Beam.Postgres (Postgres)
 import Relude
-  ( Applicative (pure)
-  , Bounded
-  , Enum
-  , Eq
-  , Generic
-  , Maybe (Just, Nothing)
-  , MonadFail (fail)
-  , Proxy (Proxy)
-  , Show
-  , Text
-  , ($)
-  , (.)
-  , (<$>)
-  , (<>)
-  , toString
-  )
 
 data NotificationMode
   = ModeDaily

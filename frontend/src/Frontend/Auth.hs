@@ -1,8 +1,11 @@
--- | FlexibleContexts: Reflex constraints typically require it.
--- ScopedTypeVariables: occasional explicit forall in helpers.
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Frontend.Auth
@@ -17,6 +20,7 @@ module Frontend.Auth
   , getTimezone
   ) where
 
+import Common.Api (RoutesApi, RoutesAuth)
 import Common.Auth
   ( LoginRequest
   , LoginResult (InvalidCredentials, LoginOk)
@@ -38,14 +42,32 @@ import Language.Javascript.JSaddle
 import Obelisk.Route (R, pattern (:/))
 import Obelisk.Route.Frontend (SetRoute, setRoute)
 import Reflex.Dom.Core
+  ( DomBuilder
+  , Dynamic
+  , Event
+  , MonadHold
+  , PerformEvent
+  , Performable
+  , PostBuild
+  , TriggerEvent
+  , current
+  , dyn_
+  , ffor
+  , fmapMaybe
+  , getPostBuild
+  , holdDyn
+  , leftmost
+  , updated
+  , (<@)
+  )
 import Reflex.Dom.Xhr
   ( XhrResponse
   , _xhrResponse_responseText
   , _xhrResponse_status
   )
 import Relude
-import Servant.API ((:<|>) ((:<|>)), Header, Headers (..), NoContent)
-import Servant.Reflex (BaseUrl (BasePath), ReqResult (..))
+import Servant.API ((:<|>) ((:<|>)), Headers (..))
+import Servant.Reflex (BaseUrl (BasePath), Client, HasClient, ReqResult (..))
 
 data AuthState
   = AuthLoading
@@ -55,21 +77,16 @@ data AuthState
 
 -- | Auth clients product.
 -- In servant-reflex-0.4.0, the tag is set to () in Frontend.Api.
--- ReqBody routes take Dynamic (Either Text body) and Event trigger.
 authClients
-  :: forall t m. (MonadWidget t m)
-  => ( (Dynamic t (Either Text RegisterRequest) -> Event t () -> m (Event t (ReqResult () (Headers '[Header "Set-Cookie" Text] RegisterResult))))
-     :<|> (Dynamic t (Either Text LoginRequest) -> Event t () -> m (Event t (ReqResult () (Headers '[Header "Set-Cookie" Text] LoginResult))))
-     :<|> (Event t () -> m (Event t (ReqResult () (Headers '[Header "Set-Cookie" Text] NoContent))))
-     :<|> (Event t () -> m (Event t (ReqResult () UserResponse)))
-     )
+  :: forall t m. (TriggerEvent t m, PerformEvent t m, MonadJSM (Performable m))
+  => Client t m RoutesAuth ()
 authClients = let (c :<|> _) = apiClients (pure $ BasePath "/") in c
 
 ----------------------------------------------------------------------
 -- currentAuth: GET /api/auth/me on PostBuild and on every refresh.
 
 currentAuth
-  :: ( MonadWidget t m )
+  :: ( HasClient t m RoutesApi (), PostBuild t m, MonadHold t m, TriggerEvent t m, PerformEvent t m, MonadJSM (Performable m) )
   => Event t ()
   -> m (Dynamic t AuthState)
 currentAuth refreshEv = do
@@ -96,7 +113,7 @@ data RegisterError
   deriving stock (Eq, Show)
 
 performLogin
-  :: ( MonadWidget t m )
+  :: ( HasClient t m RoutesApi (), MonadHold t m, TriggerEvent t m, PerformEvent t m, MonadJSM (Performable m) )
   => Event t LoginRequest
   -> m (Event t (Either LoginError UserResponse))
 performLogin reqEv = do
@@ -113,7 +130,7 @@ performLogin reqEv = do
       Left (LoginUnexpected MsgServerError Nothing)
 
 performRegister
-  :: ( MonadWidget t m )
+  :: ( HasClient t m RoutesApi (), MonadHold t m, TriggerEvent t m, PerformEvent t m, MonadJSM (Performable m) )
   => Event t RegisterRequest
   -> m (Event t (Either RegisterError UserResponse))
 performRegister reqEv = do
@@ -130,7 +147,7 @@ performRegister reqEv = do
       Left (RegisterUnexpected MsgServerError Nothing)
 
 performLogout
-  :: ( MonadWidget t m )
+  :: ( HasClient t m RoutesApi (), TriggerEvent t m, PerformEvent t m, MonadJSM (Performable m) )
   => Event t ()
   -> m (Event t ())
 performLogout ev = do

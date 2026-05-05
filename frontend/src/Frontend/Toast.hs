@@ -18,7 +18,7 @@ module Frontend.Toast
 import Common.I18n (Locale (..), localeFromText)
 import Control.Monad.Fix (MonadFix)
 import qualified Data.Aeson as Aeson
-import qualified Data.Map.Strict as Map
+import qualified Data.Map.Strict as Map (empty, fromList, union)
 import Data.Time.Clock (NominalDiffTime)
 import Frontend.Widget.Icon (iconCheckCircle, iconExclamationTriangle)
 import Language.Javascript.JSaddle

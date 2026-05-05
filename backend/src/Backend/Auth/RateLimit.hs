@@ -6,7 +6,7 @@ module Backend.Auth.RateLimit
   ) where
 
 import Control.Concurrent.MVar (modifyMVar, modifyMVar_)
-import qualified Data.HashMap.Strict as HM
+import qualified Data.HashMap.Strict as HM (delete, empty, insert, lookup)
 import Data.Time (UTCTime, addUTCTime, getCurrentTime)
 import Relude
 

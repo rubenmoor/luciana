@@ -2,10 +2,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Frontend.Api
@@ -15,6 +17,7 @@ module Frontend.Api
 
 import Common.Api (AuthRequired, RateLimit, RoutesApi)
 import Common.Route (BackendRoute, FrontendRoute, fullRouteEncoder)
+import GHC.TypeLits (Symbol)
 import Obelisk.Route (Encoder, FullRoute, PageName, R, checkEncoder, renderBackendRoute)
 import Reflex.Dom.Core (Dynamic)
 import Relude
@@ -42,12 +45,12 @@ apiClients base = client (Proxy @RoutesApi) (Proxy @m) (Proxy @()) base
 -- | Client-side instances for custom combinators. Both are transparent
 -- to the client: 'AuthRequired' relies on the browser-managed session
 -- cookie, and 'RateLimit' is tracked server-side by IP.
-instance (HasClient t m sub tag) => HasClient t m (AuthRequired reqTag :> sub) tag where
+instance (HasClient t m sub tag) => HasClient t m (AuthRequired (reqTag :: Symbol) :> sub) tag where
   type Client t m (AuthRequired reqTag :> sub) tag = Client t m sub tag
   clientWithRoute _ m p = clientWithRoute (Proxy @sub) m p
   clientWithRouteAndResultHandler _ m p = clientWithRouteAndResultHandler (Proxy @sub) m p
 
-instance (HasClient t m sub tag) => HasClient t m (RateLimit bucket :> sub) tag where
+instance (HasClient t m sub tag) => HasClient t m (RateLimit (bucket :: Symbol) :> sub) tag where
   type Client t m (RateLimit bucket :> sub) tag = Client t m sub tag
   clientWithRoute _ m p = clientWithRoute (Proxy @sub) m p
   clientWithRouteAndResultHandler _ m p = clientWithRouteAndResultHandler (Proxy @sub) m p

@@ -16,7 +16,7 @@ import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.Types (Query (Query))
 import Relude
 import System.Exit (ExitCode (ExitFailure))
-import qualified Data.Set as Set
+import qualified Data.Set as Set (member)
 import qualified Data.ByteString.Char8 as BS8
 
 data MigrationMode
