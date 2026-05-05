@@ -63,7 +63,7 @@ migrationsTableDdl =
   \, applied_at TIMESTAMPTZ NOT NULL DEFAULT now() )"
 
 allSteps :: [(Text, ByteString)]
-allSteps = [("0001_initial", initialSql)]
+allSteps = [("0001_initial_v3", initialSql)]
 
 pendingSteps :: Connection -> IO [(Text, ByteString)]
 pendingSteps conn = do
@@ -74,30 +74,30 @@ pendingSteps conn = do
 initialSql :: ByteString
 initialSql = BS8.unlines
   [ "CREATE TABLE users"
-  , "( id            BIGSERIAL  PRIMARY KEY"
-  , ", username      TEXT       NOT NULL"
-  , ", password_hash TEXT       NOT NULL"
-  , ", locale        TEXT       NOT NULL CHECK (locale IN ('de','en'))"
-  , ", timezone      TEXT       NOT NULL"
+  , "( id            BIGSERIAL   PRIMARY KEY"
+  , ", username      TEXT        NOT NULL"
+  , ", password_hash TEXT        NOT NULL"
+  , ", locale        TEXT        NOT NULL CHECK (locale IN ('de','en'))"
+  , ", timezone      TEXT        NOT NULL"
   , ", created_at    TIMESTAMPTZ NOT NULL DEFAULT now()"
   , ");"
   , "CREATE UNIQUE INDEX users_username_lower_idx ON users (lower(username));"
   , ""
   , "CREATE TABLE sessions"
-  , "( id         BIGSERIAL  PRIMARY KEY"
-  , ", user_id    BIGINT     NOT NULL REFERENCES users(id) ON DELETE CASCADE"
-  , ", token_hash BYTEA      NOT NULL UNIQUE"
+  , "( id         BIGSERIAL   PRIMARY KEY"
+  , ", user_id    BIGINT      NOT NULL REFERENCES users(id) ON DELETE CASCADE"
+  , ", token_hash BYTEA       NOT NULL UNIQUE"
   , ", created_at TIMESTAMPTZ NOT NULL DEFAULT now()"
   , ", expires_at TIMESTAMPTZ NOT NULL"
   , ");"
   , "CREATE INDEX sessions_expires_at_idx ON sessions (expires_at);"
   , ""
   , "CREATE TABLE period_entries"
-  , "( id         BIGSERIAL  PRIMARY KEY"
-  , ", user_id    BIGINT     NOT NULL REFERENCES users(id) ON DELETE CASCADE"
-  , ", start_date DATE       NOT NULL"
-  , ", end_date   DATE       NULL"
-  , ", notes      TEXT       NULL"
+  , "( id         BIGSERIAL   PRIMARY KEY"
+  , ", user_id    BIGINT      NOT NULL REFERENCES users(id) ON DELETE CASCADE"
+  , ", start_date DATE        NOT NULL"
+  , ", end_date   DATE        NULL"
+  , ", notes      TEXT        NULL"
   , ", created_at TIMESTAMPTZ NOT NULL DEFAULT now()"
   , ", CHECK (end_date IS NULL OR end_date >= start_date)"
   , ");"
@@ -105,12 +105,12 @@ initialSql = BS8.unlines
     \ON period_entries (user_id, start_date DESC);"
   , ""
   , "CREATE TABLE push_subscriptions"
-  , "( id           BIGSERIAL  PRIMARY KEY"
-  , ", user_id      BIGINT     NOT NULL REFERENCES users(id) ON DELETE CASCADE"
-  , ", endpoint     TEXT       NOT NULL UNIQUE"
-  , ", p256dh       TEXT       NOT NULL"
-  , ", auth         TEXT       NOT NULL"
-  , ", user_agent   TEXT       NULL"
+  , "( id           BIGSERIAL   PRIMARY KEY"
+  , ", user_id      BIGINT      NOT NULL REFERENCES users(id) ON DELETE CASCADE"
+  , ", endpoint     TEXT        NOT NULL UNIQUE"
+  , ", p256dh       TEXT        NOT NULL"
+  , ", auth         TEXT        NOT NULL"
+  , ", user_agent   TEXT        NULL"
   , ", created_at   TIMESTAMPTZ NOT NULL DEFAULT now()"
   , ", last_used_at TIMESTAMPTZ NULL"
   , ");"
@@ -118,10 +118,10 @@ initialSql = BS8.unlines
     \ON push_subscriptions (user_id);"
   , ""
   , "CREATE TABLE notification_prefs"
-  , "( user_id    BIGINT     PRIMARY KEY \
+  , "( user_id    BIGINT      PRIMARY KEY \
     \REFERENCES users(id) ON DELETE CASCADE"
-  , ", send_time  TIME       NOT NULL"
-  , ", mode       TEXT       NOT NULL \
+  , ", send_time  TIME        NOT NULL"
+  , ", mode       TEXT        NOT NULL \
     \CHECK (mode IN ('Daily','YellowRed','RedOnly'))"
   , ", updated_at TIMESTAMPTZ NOT NULL DEFAULT now()"
   , ");"

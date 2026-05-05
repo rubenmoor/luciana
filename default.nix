@@ -50,5 +50,7 @@ project ./. ({ pkgs, ... }: {
     }) {};
     servant = dontCheck (self.callHackage "servant" "0.19.1" {});
     servant-auth = dontCheck (doJailbreak (self.callHackage "servant-auth" "0.4.1.0" {}));
+    quickcheck-instances = doJailbreak (addBuildDepend (self.callHackage "quickcheck-instances" "0.3.28" {}) self.text-short);
+    text-short = self.callHackage "text-short" "0.1.5" {};
   };
 })

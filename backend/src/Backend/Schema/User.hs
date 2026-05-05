@@ -1,19 +1,16 @@
 -- | DeriveAnyClass / DeriveGeneric: empty `Beamable` instances generated from
 -- stock `Generic`. GeneralizedNewtypeDeriving: `deriving newtype (Eq)` on
 -- TZName lifts the underlying Text instance.
--- The remaining four extensions are required by the orphan beam SQL instances
--- for `Locale` and `TZName` below: those classes are multi-parameter
--- (HasSqlValueSyntax, FromBackendRow, HasDefaultSqlDataType) and the instance
--- heads contain free type variables (e.g. `HasSqlValueSyntax be TZName`),
--- triggering Paterson conditions that need UndecidableInstances.
+-- The remaining four extensions are required by the beam SQL instances for
+-- `Locale`: same multi-parameter / Paterson story as for `NotificationMode`.
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Backend.Schema.User
   ( UserT (..)
@@ -24,7 +21,7 @@ module Backend.Schema.User
   ) where
 
 import Common.I18n (Locale, localeFromText, localeToText)
-import Data.Functor.Identity (Identity)
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Time (UTCTime)
 import Database.Beam
   ( Beamable
@@ -39,21 +36,6 @@ import Database.Beam.Backend.Types (BeamBackend)
 import Database.Beam.Migrate (HasDefaultSqlDataType (defaultSqlDataType))
 import Database.Beam.Postgres (Postgres)
 import Relude
-  ( Eq
-  , Generic
-  , Int64
-  , Maybe (Just, Nothing)
-  , MonadFail (fail)
-  , Proxy (Proxy)
-  , Show
-  , Text
-  , ($)
-  , (.)
-  , (<$>)
-  , (<>)
-  , pure
-  , toString
-  )
 
 data UserT f = User
   { userId           :: C f (SqlSerial Int64)
@@ -77,8 +59,8 @@ instance Table UserT where
   primaryKey = UserId . userId
 
 newtype TZName = TZName { unTZName :: Text }
-  deriving stock (Show)
-  deriving newtype (Eq)
+  deriving stock (Eq, Show)
+  deriving newtype (FromJSON, ToJSON)
 
 instance HasSqlValueSyntax be Text => HasSqlValueSyntax be TZName where
   sqlValueSyntax = sqlValueSyntax . unTZName

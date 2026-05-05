@@ -10,7 +10,6 @@ module Backend.Schema.PushSubscription
   ) where
 
 import Backend.Schema.User (UserT)
-import Data.Functor.Identity (Identity)
 import Data.Time (UTCTime)
 import Database.Beam
   ( Beamable
@@ -20,12 +19,6 @@ import Database.Beam
   )
 import Database.Beam.Backend.SQL.Types (SqlSerial)
 import Relude
-  ( Generic
-  , Int64
-  , Maybe
-  , Text
-  , (.)
-  )
 
 data PushSubscriptionT f = PushSubscription
   { pushSubscriptionId         :: C f (SqlSerial Int64)

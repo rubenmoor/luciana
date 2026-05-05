@@ -22,15 +22,13 @@ import Common.Auth
   , unUsername
   )
 import Common.I18n (Locale)
-import Control.Exception (try)
 import qualified Crypto.BCrypt as BCrypt (hashPassword)
 import qualified Crypto.Random.Entropy as Entropy (getEntropy)
 import Data.Time (getCurrentTime)
-import Database.Beam (Table (primaryKey), default_, insert, insertExpressions, val_)
+import Database.Beam (Table (primaryKey), default_, insertExpressions, val_)
 import Database.Beam.Postgres ()
-import Database.Beam.Postgres.Full (returning, runPgInsertReturningList)
+import Database.Beam.Postgres.Full (anyConflict, insertOnConflict, onConflictDoNothing, runPgInsertReturningList, returning)
 import Database.Beam.Backend.SQL.Types (SqlSerial (..))
-import Database.PostgreSQL.Simple (SqlError, sqlState)
 import Relude
 import Servant.API (Header, Headers, addHeader, noHeader)
 import Servant.Server (err500)
@@ -51,12 +49,10 @@ handler _bucket req = do
   case mHashed of
     Nothing -> throwApp err500
     Just hashed -> do
-      result <- liftIO $ try @SqlError $ runBeam pool $
-        insertUser username hashed loc tz
-      case result of
-        Left e | sqlState e == "23505" -> pure (noHeader UsernameTaken)
-               | otherwise             -> throwApp err500
-        Right uid -> do
+      mUid <- liftIO $ runBeam pool $ insertUser username hashed loc tz
+      case mUid of
+        Nothing -> pure (noHeader UsernameTaken)
+        Just uid -> do
           tok <- liftIO generateToken
           now <- liftIO getCurrentTime
           let h = hashToken (encodeUtf8 tok)
@@ -73,11 +69,11 @@ hashPassword pw = do
   pure (decodeUtf8 <$> m)
 
 
-insertUser :: Username -> Text -> Locale -> Text -> Pg Int64
+insertUser :: Username -> Text -> Locale -> Text -> Pg (Maybe Int64)
 insertUser username hashed loc tz = do
   now <- liftIO getCurrentTime
   mU <- runPgInsertReturningList $
-    returning (Database.Beam.insert (_users lucianaDb) (insertExpressions
+    insertOnConflict (_users lucianaDb) (insertExpressions
       [ User
           { userId           = default_
           , userUsername     = val_ (unUsername username)
@@ -86,7 +82,9 @@ insertUser username hashed loc tz = do
           , userTimezone     = val_ (TZName tz)
           , userCreatedAt    = val_ now
           }
-      ])) (\row -> row)
+      ]) anyConflict onConflictDoNothing
+    `returning` id
   case mU of
-    [u] -> let UserId (SqlSerial uid) = primaryKey u in pure uid
-    _   -> error "INSERT users RETURNING id produced no row"
+    [u] -> let UserId (SqlSerial uid) = primaryKey u in pure (Just uid)
+    []  -> pure Nothing
+    _   -> error "INSERT users ON CONFLICT DO NOTHING RETURNING produced more than 1 row"

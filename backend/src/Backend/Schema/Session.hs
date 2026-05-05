@@ -12,8 +12,6 @@ module Backend.Schema.Session
   ) where
 
 import Backend.Schema.User (UserT)
-import Data.ByteString (ByteString)
-import Data.Functor.Identity (Identity)
 import Data.Time (UTCTime)
 import Database.Beam
   ( Beamable
@@ -23,10 +21,6 @@ import Database.Beam
   )
 import Database.Beam.Backend.SQL.Types (SqlSerial)
 import Relude
-  ( Generic
-  , Int64
-  , (.)
-  )
 
 data SessionT f = Session
   { sessionId        :: C f (SqlSerial Int64)
