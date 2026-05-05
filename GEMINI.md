@@ -57,7 +57,8 @@ Refer to these files for context on specific areas. Each plan starts with a `Sta
 ## Instructions
 
 1.  **No code without plan:** The current state of the code must always be reflected in `plans/`. Edit or create a plan file first. **Stop and wait for user review** after updating a plan before starting implementation.
-    -   **Strategic Research:** Use `enter_plan_mode` for high-level design changes, complex Haskell refactors, or new features to draft design documents.
+    -   **No Temporary Plans:** NEVER use `enter_plan_mode`. Always create or edit plan files directly as markdown files in the `plans/` directory to ensure they are version-controlled and visible.
+    -   **Task Checkpoints:** Stop and wait for user review after completing **each** task or fix listed in `current-state.md`. Do not autonomously move to the next task in the list.
 2.  **One feature, one file:** Every feature gets its own markdown file in `plans/`.
 3.  **Plan-file hierarchy, no redundancy:** `GEMINI.md` is the root. Link to more specific plans rather than restating content.
 4.  **Explicit scope:** If changes outside the planned scope are needed, update the plan first.

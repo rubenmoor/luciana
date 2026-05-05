@@ -6,8 +6,7 @@ Session-handoff inbox.
 
 ## Tasks & Fixes
 
-- **Beam: Register cleanup.** `Backend.Auth.Register` still imports `postgresql-simple` for `SqlError` handling and uses a manual `runBeam pool` pattern to catch uniqueness violations. Refactor to a more idiomatic Beam pattern if possible.
-- **Toasts: Flood guard.** Cap display at 5 entries.
+(None pending)
 
 ## Feature Ideas (No plan yet)
 
@@ -17,6 +16,9 @@ Session-handoff inbox.
 
 ## Recently Completed
 
+- **Toasts: Flood guard.** Capped display at 5 entries. Automatically removes oldest when overflowing.
+- **Beam: Register cleanup.** Refactored `Backend.Auth.Register` to use idiomatic `insertOnConflict` with `onConflictDoNothing`, removing manual `SqlError` handling.
+- **Backend: Beam 0.10 compatibility.** Updated `Backend.Schema.Db` to match the 4-argument `DatabaseTable` constructor in newer Beam versions and fixed related warnings.
 - **Nix: GHCJS build fix.** Resolved `quickcheck-instances` failure by explicitly adding `text-short` dependency in `default.nix`.
 - **Haskell Standards:** Enforced explicit imports across all modules (except Relude) and achieved zero warnings in the backend build.
 - **Backend Fixes:** Resolved critical Beam issues (returning syntax, `runPgInsertReturningList`, multiple assignments) and fixed BCrypt hashing with secure salts.
