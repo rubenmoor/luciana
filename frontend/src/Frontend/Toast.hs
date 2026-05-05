@@ -58,6 +58,8 @@ import Reflex.Dom.Core
   , mergeWith
   , never
   , performEvent
+  , push
+  , sample
   , switchDyn
   , tellEvent
   , text
@@ -172,10 +174,20 @@ renderToasts localeD toastsEv = do
         snapshotEv
   rec
     let deletePatchEv = fmap (const Nothing) <$> dismissEv
-        patchEv = mergeWith Map.union [insertPatchEv, deletePatchEv]
+        patchEv = mergeWith Map.union [insertPatchEv, deletePatchEv, overflowPatchEv]
     childrenD <- elAttr "div" ("class" =: "toast toast-end") $
       listHoldWithKey Map.empty patchEv $ \_ (loc, t) -> renderOne loc t
     let dismissEv = switchDyn (mergeMap <$> childrenD)
+        currentKeysD = Map.keys <$> childrenD
+        overflowPatchEv = flip push insertPatchEv $ \newPatch -> do
+          keys <- sample (current currentKeysD)
+          let totalCount = length keys + Map.size newPatch
+          if totalCount > 5
+            then do
+              let toRemoveCount = totalCount - 5
+                  toRemove = take toRemoveCount (sort keys)
+              pure $ Just $ Map.fromList [ (k, Nothing) | k <- toRemove ]
+            else pure Nothing
   pure ()
 
 -- | Render a single toast and return its dismiss event (auto-timer or
