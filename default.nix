@@ -49,6 +49,8 @@ project ./. ({ pkgs, ... }: {
       sha256 = "031kric5g8r2vp8vpva02c5fxyb65vivsc3bn474bnsgp55pisfz";
     }) {};
     servant = dontCheck (self.callHackage "servant" "0.19.1" {});
+    # servant-auth pulls in quickcheck-instances, which fails to find text-short
+    # in the GHCJS package set without explicit overrides.
     servant-auth = dontCheck (doJailbreak (self.callHackage "servant-auth" "0.4.1.0" {}));
     quickcheck-instances = doJailbreak (addBuildDepend (self.callHackage "quickcheck-instances" "0.3.28" {}) self.text-short);
     text-short = self.callHackage "text-short" "0.1.5" {};
