@@ -57,6 +57,7 @@ library
     Backend.Push
     Backend.RateLimit.Combinator
     Backend.Schema.Db
+    Backend.Schema.Locale
     Backend.Schema.Migration
     Backend.Schema.NotificationPref
     Backend.Schema.PeriodEntry

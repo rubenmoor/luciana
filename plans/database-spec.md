@@ -22,6 +22,8 @@ A project-local cluster is provisioned by `flake.nix`.
 
 - **Dependencies**: `beam-core`, `beam-migrate`, `beam-postgres`, `postgresql-simple`, `obelisk-executable-config-lookup`.
 - **Modules**:
+  - `Common.I18n` for pure locale values and JSON/text conversion only.
+  - `Backend.Schema.Locale` for backend-local SQL bridge types that adapt shared domain values to Beam.
   - `Backend.Schema.{User,Session,PeriodEntry,PushSubscription,NotificationPref}` for table records.
   - `Backend.Schema.Db` for `LucianaDb` definition.
 
@@ -56,6 +58,23 @@ lucianaDb = defaultDbSettings `withDbModification`
 This ensures that:
 1. Primary keys named `XId` in Haskell map to `id` in SQL (via `customSnakeCase` logic).
 2. Foreign keys map to `other_table_id` instead of the verbose nested defaults.
+
+## Shared Types and SQL Bridges
+
+Shared domain types that are needed by the database layer should stay in
+`common` only as pure data plus JSON/text conversion helpers. Any Beam SQL
+instances for those types must live in `backend` instead, behind a
+backend-local bridge type.
+
+For example:
+
+- `Common.I18n.Locale` is the public application type.
+- `Backend.Schema.Locale.DbLocale` is the database-facing wrapper.
+- `Backend.Schema.User` stores `DbLocale` in the table definition and converts
+  to or from `Locale` at the backend boundary.
+
+This keeps `common` free of `beam-*` dependencies and prevents the frontend
+from inheriting database libraries through shared modules.
 
 ---
 

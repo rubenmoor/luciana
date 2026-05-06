@@ -12,6 +12,7 @@ import Backend.Auth.Session (createSession)
 import Backend.Db (Pg, runBeam)
 import Backend.Env (envCookieSecure, envPool)
 import Backend.RateLimit.Combinator (RateBucket)
+import Backend.Schema.Locale (DbLocale (DbLocale))
 import Backend.Schema.Db (LucianaDb (..), lucianaDb)
 import Backend.Schema.User (PrimaryKey (UserId), TZName (TZName), UserT (..))
 import Common.Auth
@@ -78,11 +79,11 @@ insertUser username hashed loc tz = do
   now <- liftIO getCurrentTime
   mU <- runPgInsertReturningList $
     insertOnConflict (_users lucianaDb) (insertExpressions
-      [ User
+          [ User
           { userId           = default_
           , userUsername     = val_ (unUsername username)
           , userPasswordHash = val_ hashed
-          , userLocale       = val_ loc
+          , userLocale       = val_ (DbLocale loc)
           , userTimezone     = val_ (TZName tz)
           , userCreatedAt    = val_ now
           }

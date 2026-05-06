@@ -16,6 +16,7 @@ import Backend.Auth.RateLimit ()
 import Backend.Auth.Session (deleteExpiredSessions)
 import Backend.Db (Pg, runBeam)
 import Backend.Env (Env, envPool)
+import Backend.Schema.Locale (unDbLocale)
 import Backend.Schema.Db (LucianaDb (..), lucianaDb)
 import Backend.Schema.User (TZName (unTZName), UserT (..))
 import Common.Auth (UserResponse (..))
@@ -87,6 +88,6 @@ toResponse :: UserT Identity -> UserResponse
 toResponse u = UserResponse
   { urId       = let SqlSerial i = userId u in i
   , urUsername = userUsername u
-  , urLocale   = userLocale u
+  , urLocale   = unDbLocale (userLocale u)
   , urTimezone = unTZName (userTimezone u)
   }

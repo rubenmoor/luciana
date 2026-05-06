@@ -1,5 +1,3 @@
--- | DeriveGeneric: stock-derive `Generic` so future serialisers (JSON, beam
--- backend instances) can use generic machinery without writing per-type code.
 {-# LANGUAGE DeriveGeneric #-}
 
 module Common.I18n

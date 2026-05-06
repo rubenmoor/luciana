@@ -20,7 +20,7 @@ module Backend.Schema.User
   , TZName (..)
   ) where
 
-import Common.I18n (Locale)
+import Backend.Schema.Locale (DbLocale)
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Time (UTCTime)
 import Database.Beam
@@ -41,7 +41,7 @@ data UserT f = User
   { userId           :: C f (SqlSerial Int64)
   , userUsername     :: C f Text
   , userPasswordHash :: C f Text
-  , userLocale       :: C f Locale
+  , userLocale       :: C f DbLocale
   , userTimezone     :: C f TZName
   , userCreatedAt    :: C f UTCTime
   }
@@ -69,17 +69,4 @@ instance (BeamBackend be, FromBackendRow be Text) => FromBackendRow be TZName wh
   fromBackendRow = TZName <$> fromBackendRow
 
 instance HasDefaultSqlDataType Postgres TZName where
-  defaultSqlDataType _ p embedded = defaultSqlDataType (Proxy :: Proxy Text) p embedded
-
-instance HasSqlValueSyntax be Text => HasSqlValueSyntax be Locale where
-  sqlValueSyntax = sqlValueSyntax . localeToText
-
-instance (BeamBackend be, FromBackendRow be Text) => FromBackendRow be Locale where
-  fromBackendRow = do
-    t <- fromBackendRow
-    case localeFromText t of
-      Just l  -> pure l
-      Nothing -> fail $ "Unknown locale: " <> toString t
-
-instance HasDefaultSqlDataType Postgres Locale where
   defaultSqlDataType _ p embedded = defaultSqlDataType (Proxy :: Proxy Text) p embedded
