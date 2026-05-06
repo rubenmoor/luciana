@@ -75,6 +75,7 @@
           buildInputs = with pkgs; [
             nodejs_20
             google-cloud-sdk # Essential for 'gcloud auth' and Gemini integration
+            bubblewrap # Required by Codex sandboxing (bwrap on PATH)
             postgres
             pgInit
             pgUp
@@ -121,6 +122,7 @@
             echo "Gemini: Run 'gemini login' to authenticate via gcloud."
             echo "Claude: Run 'claude' to begin."
             echo "Codex: Run 'codex' to begin."
+            echo "Sandboxing: bubblewrap is available as 'bwrap'."
             echo "Postgres: pg-init, pg-up, pg-down."
             echo "-------------------------------------------------------"
           '';
