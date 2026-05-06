@@ -85,6 +85,9 @@
           ] ++ nativeDeps;
 
           shellHook = ''
+            export NIX_PATH="nixpkgs=$(nix-instantiate --eval --strict \
+              -E '(import ./.obelisk/impl {}).nixpkgs.path' | tr -d '"')"
+
             export NPM_CONFIG_PREFIX="$PWD/.npm-global"
             export PATH="${pkgs.nodejs_20}/bin:$NPM_CONFIG_PREFIX/bin:$PATH"
             
