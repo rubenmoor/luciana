@@ -100,10 +100,7 @@
 
             # COSMIC Terminal can render Codex input with low contrast in some themes.
             # Detect COSMIC robustly (TERM vars or parent process name) and disable ANSI color.
-            parent_comm="$(ps -o comm= -p "$PPID" 2>/dev/null || true)"
-            if [ "${TERM_PROGRAM:-}" = "cosmic-term" ]               || [ -n "${COSMIC_TERM:-}" ]               || [ "${TERM:-}" = "xterm-ghostty" ]               || echo "$parent_comm" | grep -qi 'cosmic'; then
-              export NO_COLOR="${NO_COLOR:-1}"
-            fi
+            export NO_COLOR=1
 
             # Install Gemini CLI if missing
             if ! command -v gemini >/dev/null; then
