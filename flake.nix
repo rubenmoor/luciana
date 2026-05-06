@@ -98,6 +98,12 @@
             export PGDATABASE=luciana
             export PGUSER=luciana
 
+            # COSMIC Terminal currently renders Codex input with low contrast in some themes.
+            # Disable ANSI color in Codex there to keep prompt text readable.
+            if [ "${TERM_PROGRAM:-}" = "cosmic-term" ] || [ -n "${COSMIC_TERM:-}" ]; then
+              export NO_COLOR=1
+            fi
+
             # Install Gemini CLI if missing
             if ! command -v gemini >/dev/null; then
               echo "Installing Gemini Code Assist CLI..."
@@ -122,6 +128,7 @@
             echo "Gemini: Run 'gemini login' to authenticate via gcloud."
             echo "Claude: Run 'claude' to begin."
             echo "Codex: Run 'codex' to begin."
+            echo "Tip: if Codex input contrast looks wrong, run with NO_COLOR=1."
             echo "Sandboxing: bubblewrap is available as 'bwrap'."
             echo "Postgres: pg-init, pg-up, pg-down."
             echo "-------------------------------------------------------"
