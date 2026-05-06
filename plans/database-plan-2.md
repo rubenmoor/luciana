@@ -1,55 +1,125 @@
 # database-plan-2.md
 
-Status: implemented
+Status: spec
 
-Implementation plan for concise Postgres field naming (concise SQL columns, descriptive Haskell fields). Refer to [database-spec.md](database-spec.md) for the naming specification.
+Implementation plan for the database shape defined in
+[`database-spec.md`](database-spec.md): concise SQL column naming from a
+generic Beam mapping, plus a single migration owner that bootstraps and tracks
+schema versions.
 
 ---
 
 ## Goal
 
-Align the Postgres schema with concise naming (e.g., `id`, `user_id`) while keeping Haskell record fields descriptive (e.g., `userId`, `sessionUserId`).
+Move the schema layer from per-table handwritten field mappings and ad hoc
+bootstrap SQL into the spec-driven layout:
+
+- `Backend.Schema.Db` owns the canonical `lucianaDb` mapping.
+- Column naming is derived generically from Beam field names.
+- `Backend.Schema.Migration` owns schema bootstrap and version tracking.
+- The initial SQL block is the source of truth for table creation.
+
+---
+
+## Current State
+
+The current code already has a working database layer, but it does not match
+the spec:
+
+- `Backend.Schema.Db` still names every column explicitly with `fieldNamed`.
+- `Backend.Schema.Migration` already owns startup migration flow, but the
+  migration content should be reorganized to match the spec's contract for an
+  explicit initial SQL bootstrap and versioned follow-up steps.
+- The database layer is otherwise wired through `Backend.Db` and startup runs
+  migrations before serving.
 
 ---
 
 ## Plan
 
-### 1. Implement Naming Helpers
+### 1. Replace per-table field mappings with one generic naming helper
 
-In `Backend.Schema.Db`, implement the generic naming logic:
+Update `Backend.Schema.Db` to derive SQL names from the Beam record structure
+instead of spelling out each table field by hand.
 
-- `customSnakeCase :: String -> String`: Converts `camelCase` to `snake_case` and maps `XId` or `xId` to `id`.
-- `applyGlobalNaming`: A generic `allBeamFields` modification that applies `customSnakeCase`.
+The helper should:
 
-### 2. Update Database Settings
+- strip table-specific prefixes from Haskell field names
+- convert camelCase to snake_case
+- keep `Id`-style primary keys concise
+- preserve readable foreign-key names such as `user_id`
 
-Update `lucianaDb` in `Backend.Schema.Db`:
+Use that helper to build `lucianaDb` via `defaultDbSettings \`withDbModification\``
+and Beam's table-modification helper (`modifyTable` or the equivalent
+`modifyEntityName` + `modifyTableFields` composition).
 
-- Use `defaultDbSettings \`withDbModification\` dbModification { ... }`.
-- Apply `modifyTableFields applyGlobalNaming` to all tables.
+### 2. Keep `checkedLucianaDb` as the migration view
 
-### 3. Update Migrations
+Retain `checkedLucianaDb` in `Backend.Schema.Db` as the Beam migrator view
+used by schema validation and inspection.
 
-Refactor `Backend.Schema.Migration.hs`:
+Make sure the runtime `lucianaDb` and the checked migration view describe the
+same tables and field shapes so migration diffs stay meaningful.
 
-- Update `initialSql` to use concise names:
-  - Primary keys: `id`.
-  - Foreign keys: `user_id` (not `session_user_id__user_id`).
-  - Indices and unique constraints to match.
-- Bump version to `0001_initial_v3` (or reset if in early dev).
+### 3. Rework migration ownership around a single bootstrap SQL block
 
-### 4. Database Reset
+Refactor `Backend.Schema.Migration` so it is the only module responsible for:
 
-Apply the new schema:
+- applying startup migrations
+- tracking applied versions in `schema_migrations`
+- owning the bootstrap SQL that creates the base tables
 
-1. Stop application.
-2. `dropdb luciana`
-3. `pg-init`
-4. `ob run` (auto-applies the new concise migrations).
+The bootstrap SQL should explicitly define:
+
+- all tables
+- primary keys
+- foreign keys and cascade rules
+- unique constraints and indexes
+- check constraints
+- defaults and timestamps
+
+### 4. Make the initial migration the canonical schema bootstrap
+
+Replace any implicit or partially generated table setup with one initial SQL
+block that can stand on its own.
+
+This bootstrap should create the current schema shape in one pass and remain
+easy to audit. It should be the source of truth for the database layout, not a
+secondary artifact derived from a different schema description.
+
+### 5. Keep later migrations incremental and versioned
+
+After the initial bootstrap exists, add future changes as explicit versioned
+steps rather than regenerating the whole schema.
+
+The migration runner should:
+
+- read the applied versions from `schema_migrations`
+- compute the pending ordered steps
+- print pending SQL in `print` mode
+- apply pending SQL in `auto`/`apply` modes
+
+### 6. Preserve the startup flow
+
+Keep the existing startup shape intact:
+
+1. load the DB URL from config
+2. create the pool
+3. run migrations
+4. build `Env`
+5. start the backend
+
+The plan is to change the database layer behind that flow, not to redesign the
+application startup sequence.
 
 ---
 
-## File touch list
+## File Touch List
 
 - `backend/src/Backend/Schema/Db.hs`
 - `backend/src/Backend/Schema/Migration.hs`
+- `backend/src/Backend/Schema/User.hs`
+- `backend/src/Backend/Schema/Session.hs`
+- `backend/src/Backend/Schema/PeriodEntry.hs`
+- `backend/src/Backend/Schema/PushSubscription.hs`
+- `backend/src/Backend/Schema/NotificationPref.hs`

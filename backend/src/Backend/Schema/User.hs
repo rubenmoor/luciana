@@ -2,7 +2,7 @@
 -- stock `Generic`. GeneralizedNewtypeDeriving: `deriving newtype (Eq)` on
 -- TZName lifts the underlying Text instance.
 -- The remaining four extensions are required by the beam SQL instances for
--- `Locale`: same multi-parameter / Paterson story as for `NotificationMode`.
+-- `TZName`: same multi-parameter / Paterson story as for `NotificationMode`.
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -20,7 +20,7 @@ module Backend.Schema.User
   , TZName (..)
   ) where
 
-import Common.I18n (Locale, localeFromText, localeToText)
+import Common.I18n (Locale)
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Time (UTCTime)
 import Database.Beam

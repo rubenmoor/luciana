@@ -65,6 +65,32 @@ ob run                    # backend connects via the socket
 pg-down                   # at end of session (optional)
 ```
 
+### Resetting the local database
+
+When testing database schema changes, reset from a clean state so the new
+migrations and bootstrap SQL run against a fresh cluster.
+
+- Database-only reset:
+
+  ```bash
+  pg-down
+  dropdb luciana
+  pg-init
+  pg-up
+  ```
+
+- Full cluster reset:
+
+  ```bash
+  pg-down
+  rm -rf .pg/data .pg/log .pg/sock config/backend/db-url
+  pg-init
+  pg-up
+  ```
+
+Use the full cluster reset when you want to validate schema bootstrap from
+scratch, not just reapply migrations to an existing local Postgres instance.
+
 ## NIX_PATH (pinned to obelisk's nixpkgs)
 
 `obelisk-command` 0.9.0.1 hard-codes a bundled Nix 2.11.0. Inside `ob run` it
