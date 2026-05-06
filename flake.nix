@@ -1,5 +1,5 @@
 {
-  description = "Dev environment for Claude Code and Gemini CLI";
+  description = "Dev environment for Claude Code, Gemini CLI, and Codex CLI";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -12,7 +12,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
         postgres = pkgs.postgresql_16;
         
-        # Native dependencies for Gemini/Claude credential storage
+        # Native dependencies for Gemini/Claude/Codex credential storage
         nativeDeps = with pkgs; [
           libsecret
           pkg-config
@@ -75,6 +75,7 @@
           buildInputs = with pkgs; [
             nodejs_20
             google-cloud-sdk # Essential for 'gcloud auth' and Gemini integration
+            bubblewrap # Required by Codex sandboxing (bwrap on PATH)
             postgres
             pgInit
             pgUp
@@ -97,6 +98,13 @@
             export PGDATABASE=luciana
             export PGUSER=luciana
 
+            # COSMIC Terminal can render Codex input with low contrast in some themes.
+            # Detect COSMIC robustly (TERM vars or parent process name) and disable ANSI color.
+            parent_comm="$(ps -o comm= -p "$PPID" 2>/dev/null || true)"
+            if [ "${TERM_PROGRAM:-}" = "cosmic-term" ]               || [ -n "${COSMIC_TERM:-}" ]               || [ "${TERM:-}" = "xterm-ghostty" ]               || echo "$parent_comm" | grep -qi 'cosmic'; then
+              export NO_COLOR="${NO_COLOR:-1}"
+            fi
+
             # Install Gemini CLI if missing
             if ! command -v gemini >/dev/null; then
               echo "Installing Gemini Code Assist CLI..."
@@ -109,11 +117,20 @@
               npm install -g @anthropic-ai/claude-code
             fi
 
+            # Install Codex CLI if missing
+            if ! command -v codex >/dev/null; then
+              echo "Setting up Codex CLI..."
+              npm install -g @openai/codex
+            fi
+
             echo "-------------------------------------------------------"
             echo "Environment Ready for Luciana Development"
             echo "-------------------------------------------------------"
             echo "Gemini: Run 'gemini login' to authenticate via gcloud."
             echo "Claude: Run 'claude' to begin."
+            echo "Codex: Run 'codex' to begin."
+            echo "Tip: if Codex input contrast looks wrong, run with NO_COLOR=1."
+            echo "Sandboxing: bubblewrap is available as 'bwrap'."
             echo "Postgres: pg-init, pg-up, pg-down."
             echo "-------------------------------------------------------"
           '';
