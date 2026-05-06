@@ -15,7 +15,11 @@ import Backend.Schema.NotificationPref
 import Backend.Schema.User (PrimaryKey (UserId))
 import Common.Api (RoutesNotifications)
 import Common.Notifications
-  ( NotificationMode (Daily, RedOnly, YellowRed)
+  ( NotificationMode
+      ( NotificationModeDaily
+      , NotificationModeRedOnly
+      , NotificationModeYellowRed
+      )
   , NotificationPrefsResponse (..)
   )
 import Data.Time (TimeOfDay (..))
@@ -48,7 +52,7 @@ getPrefs uid = do
     pure prefs
   case mPrefs of
     Just p -> pure $ toResponse p
-    Nothing -> pure $ NotificationPrefsResponse (TimeOfDay 8 0 0) Daily
+    Nothing -> pure $ NotificationPrefsResponse (TimeOfDay 8 0 0) NotificationModeDaily
 
 putPrefs :: Int64 -> NotificationPrefsResponse -> App NotificationPrefsResponse
 putPrefs uid req = do
@@ -78,12 +82,12 @@ toResponse p = NotificationPrefsResponse
 
 toSchemaMode :: Common.Notifications.NotificationMode -> Backend.Schema.NotificationPref.NotificationMode
 toSchemaMode = \case
-  Daily     -> ModeDaily
-  YellowRed -> ModeYellowRed
-  RedOnly   -> ModeRedOnly
+  NotificationModeDaily     -> ModeDaily
+  NotificationModeYellowRed -> ModeYellowRed
+  NotificationModeRedOnly   -> ModeRedOnly
 
 fromSchemaMode :: Backend.Schema.NotificationPref.NotificationMode -> Common.Notifications.NotificationMode
 fromSchemaMode = \case
-  ModeDaily     -> Daily
-  ModeYellowRed -> YellowRed
-  ModeRedOnly   -> RedOnly
+  ModeDaily     -> NotificationModeDaily
+  ModeYellowRed -> NotificationModeYellowRed
+  ModeRedOnly   -> NotificationModeRedOnly

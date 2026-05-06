@@ -64,7 +64,7 @@ handlers =
 getStatus :: Int64 -> App PeriodStatusResponse
 getStatus _uid = do
   now <- liftIO getCurrentTime
-  pure $ PeriodStatusResponse Green 1 (utctDay now)
+  pure $ PeriodStatusResponse PeriodPhaseGreen 1 (utctDay now)
 
 getEntries :: Int64 -> Maybe Int -> Maybe Day -> App [PeriodEntryResponse]
 getEntries uid mLimit mBefore = do

@@ -6,13 +6,16 @@ module Common.I18n
   , localeFromText
   ) where
 
-import Data.Aeson (FromJSON (parseJSON), ToJSON (toJSON), withText)
+import Data.Aeson (FromJSON, ToJSON)
+import Deriving.Aeson
+import Deriving.Aeson.Stock
 import Relude
 
 data Locale
   = LocaleDe
   | LocaleEn
   deriving stock (Bounded, Enum, Eq, Generic, Show)
+  deriving (FromJSON, ToJSON) via PrefixedSnake "Locale" Locale
 
 localeToText :: Locale -> Text
 localeToText = \case
@@ -24,11 +27,3 @@ localeFromText = \case
   "de" -> Just LocaleDe
   "en" -> Just LocaleEn
   _    -> Nothing
-
-instance ToJSON Locale where
-  toJSON = toJSON . localeToText
-
-instance FromJSON Locale where
-  parseJSON = withText "Locale" $ \t -> case localeFromText t of
-    Just l  -> pure l
-    Nothing -> fail "expected 'de' or 'en'"

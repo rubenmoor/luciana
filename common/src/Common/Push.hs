@@ -7,6 +7,8 @@ module Common.Push
   ) where
 
 import Data.Aeson (FromJSON, ToJSON)
+import Deriving.Aeson
+import Deriving.Aeson.Stock
 import Relude
 
 data PushSubscribeRequest = PushSubscribeRequest
@@ -17,10 +19,10 @@ data PushSubscribeRequest = PushSubscribeRequest
   , psrqTimezone  :: Text
   }
   deriving stock (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
+  deriving (FromJSON, ToJSON) via PrefixedSnake "psrq" PushSubscribeRequest
 
 newtype PushUnsubscribeRequest = PushUnsubscribeRequest
   { purqEndpoint :: Text
   }
   deriving stock (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
+  deriving (FromJSON, ToJSON) via PrefixedSnake "purq" PushUnsubscribeRequest

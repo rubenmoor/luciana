@@ -13,12 +13,14 @@ module Common.Period
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Time (Day)
+import Deriving.Aeson
+import Deriving.Aeson.Stock
 import Relude
 import Servant.API (FromHttpApiData, ToHttpApiData)
 
-data PeriodPhase = Green | Yellow | Red
+data PeriodPhase = PeriodPhaseGreen | PeriodPhaseYellow | PeriodPhaseRed
   deriving stock (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
+  deriving (FromJSON, ToJSON) via PrefixedSnake "PeriodPhase" PeriodPhase
 
 data PeriodStatusResponse = PeriodStatusResponse
   { psrPhase        :: PeriodPhase
@@ -26,7 +28,7 @@ data PeriodStatusResponse = PeriodStatusResponse
   , psrNextExpected :: Day
   }
   deriving stock (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
+  deriving (FromJSON, ToJSON) via PrefixedSnake "psr" PeriodStatusResponse
 
 newtype PeriodEntryId = PeriodEntryId { unPeriodEntryId :: Int64 }
   deriving stock (Eq, Show, Generic)
@@ -39,7 +41,7 @@ data PeriodEntryResponse = PeriodEntryResponse
   , perNotes     :: Maybe Text
   }
   deriving stock (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
+  deriving (FromJSON, ToJSON) via PrefixedSnake "per" PeriodEntryResponse
 
 data PeriodEntryRequest = PeriodEntryRequest
   { peqStartDate :: Day
@@ -47,10 +49,10 @@ data PeriodEntryRequest = PeriodEntryRequest
   , peqNotes     :: Maybe Text
   }
   deriving stock (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
+  deriving (FromJSON, ToJSON) via PrefixedSnake "peq" PeriodEntryRequest
 
 newtype CreatePeriodEntryResponse = CreatePeriodEntryResponse
   { cperId :: PeriodEntryId
   }
   deriving stock (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
+  deriving (FromJSON, ToJSON) via PrefixedSnake "cper" CreatePeriodEntryResponse

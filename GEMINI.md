@@ -30,6 +30,7 @@ Refer to these files for context on specific areas. Each plan starts with a `Sta
 | [backend-plan-1.md](plans/backend-plan-1.md) | reference | Historical Servant migration plan from scratch; superseded by backend-plan-2 |
 | [backend-plan-2.md](plans/backend-plan-2.md) | implemented | Steps used to finish backend migration from WIP state |
 | [toasts.md](plans/toasts.md) | implemented | Transient success/error messages (DaisyUI toasts, EventWriter) |
+| [json-field-naming-spec.md](plans/json-field-naming-spec.md) | spec | Standardize JSON field naming via `deriving-aeson` |
 
 ## Source Map
 
