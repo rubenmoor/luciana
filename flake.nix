@@ -1,5 +1,5 @@
 {
-  description = "Dev environment for Claude Code and Gemini CLI";
+  description = "Dev environment for Claude Code, Gemini CLI, and Codex CLI";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -12,7 +12,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
         postgres = pkgs.postgresql_16;
         
-        # Native dependencies for Gemini/Claude credential storage
+        # Native dependencies for Gemini/Claude/Codex credential storage
         nativeDeps = with pkgs; [
           libsecret
           pkg-config
@@ -109,11 +109,18 @@
               npm install -g @anthropic-ai/claude-code
             fi
 
+            # Install Codex CLI if missing
+            if ! command -v codex >/dev/null; then
+              echo "Setting up Codex CLI..."
+              npm install -g @openai/codex
+            fi
+
             echo "-------------------------------------------------------"
             echo "Environment Ready for Luciana Development"
             echo "-------------------------------------------------------"
             echo "Gemini: Run 'gemini login' to authenticate via gcloud."
             echo "Claude: Run 'claude' to begin."
+            echo "Codex: Run 'codex' to begin."
             echo "Postgres: pg-init, pg-up, pg-down."
             echo "-------------------------------------------------------"
           '';
