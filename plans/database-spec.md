@@ -35,7 +35,7 @@ To keep SQL column names concise (e.g. `id` instead of `user_id`, `user_id` inst
 -- | A generic function that strips prefixes and converts to snake_case.
 -- Matches the default Beam camelCase-to-snake_case but handles nested
 -- primary keys concisely for simple FKs.
-applyGlobalNaming :: (Generic (tbl (FieldModification s tbl))) 
+applyGlobalNaming :: (Generic (tbl (FieldModification s tbl)))
                   => tbl (FieldModification s tbl)
 applyGlobalNaming = allBeamFields $ \field ->
   let name = T.unpack (_fieldColumnName field)

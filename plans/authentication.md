@@ -1,6 +1,7 @@
 # authentication.md
 
-Status: partial
+Status: partial — core username/password sessions are implemented; source is
+canonical for exact rate-limit and timezone-refresh behavior.
 
 Username + password authentication with server-side sessions. Multi-user from day one (per `goal.md` § Basic features). Schema lives in [`schema.md`](schema.md); library choices in [`architecture.md`](architecture.md).
 
@@ -91,7 +92,11 @@ data LoginResult    = LoginOk UserResponse | InvalidCredentials
 data RegisterResult = RegisterOk UserResponse | UsernameTaken
 ```
 
-`timezone` on register comes from `Intl.DateTimeFormat().resolvedOptions().timeZone` on the client. Refreshed on every successful login (UPDATE `users.timezone`) so device travel is picked up without a separate endpoint.
+`timezone` on register comes from
+`Intl.DateTimeFormat().resolvedOptions().timeZone` on the client. Planned:
+refresh it on every successful login (`UPDATE users.timezone`) so device
+travel is picked up without a separate endpoint. Check
+`Backend.Auth.Login` before relying on this behavior.
 
 ## Server middleware
 
@@ -111,14 +116,17 @@ API handlers that need authentication call `requireUser` first and receive the `
 
 ## Rate limiting
 
-In-memory token bucket keyed by `(remoteAddr, username)`:
+Planned design: in-memory token bucket keyed by `(remoteAddr, username)`:
 
 - 5 failed login attempts per 15 minutes per key → respond with `429
   Too Many Requests` (empty body).
 - Successful login resets the bucket.
 - Plain `IORef (HashMap (Text, Text) Bucket)` behind an MVar is fine at our scale; revisit if we ever run multiple backend instances (would move to Postgres or Redis).
 
-Registration is rate-limited the same way, keyed by `remoteAddr` only, to deter signup-spam without locking out legitimate retries.
+Registration is rate-limited the same way, keyed by `remoteAddr` only, to
+deter signup-spam without locking out legitimate retries. The implemented
+Servant combinator currently runs before the login handler receives the
+username, so the source is canonical for the exact key shape.
 
 ## Frontend
 

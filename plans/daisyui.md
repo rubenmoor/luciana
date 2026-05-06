@@ -7,17 +7,18 @@ classes to the existing UI (top bar, login/signup forms, placeholder pages) so
 the app renders with a coherent default look immediately after this plan is
 implemented — no further design work required.
 
-Stack note: we are on Tailwind v4 (`tailwindcss ^4.1.13`, see
-`static/src/package.json`). daisyUI 5 is the version that supports Tailwind v4
-via the `@plugin` CSS directive — *not* the legacy `plugins: [require('daisyui')]`
-JS config style (which only works with Tailwind v3).
+Stack note: we are on Tailwind v4 via the standalone Tailwind CLI described in
+[`tailwind.md`](tailwind.md). daisyUI 5 is the version that supports Tailwind
+v4 via the `@plugin` CSS directive — *not* the legacy
+`plugins: [require('daisyui')]` JS config style (which only works with
+Tailwind v3).
 
 ## Approach for the build
 
-The Nix derivation in `static/default.nix` runs the `tailwindcss` CLI from
-nixpkgs. It does not currently call `npm install`, and Nix builds are
-sandboxed (no network), so we cannot just add `daisyui` to `package.json` and
-expect it to resolve.
+The Nix derivation in `static/default.nix` runs the standalone Tailwind CLI
+fetched from upstream GitHub releases. It does not call `npm install`, and Nix
+builds are sandboxed (no network), so daisyUI is fetched separately as a
+fixed-output npm tarball.
 
 We will fetch the daisyUI npm tarball with `pkgs.fetchurl` (deterministic via
 sha256), extract it into a `node_modules/daisyui` directory inside the build
@@ -25,8 +26,8 @@ sandbox, and reference it from CSS via `@plugin "daisyui";`. Tailwind v4
 resolves `@plugin` names through `node_modules` relative to the CSS input file,
 so this Just Works without npm itself.
 
-`package.json` stays as a manifest only — it is never used to drive an install
-in the build. We update it for human reference / future npm-based tooling.
+There is no `static/src/package.json` in the current build path; the Nix
+derivation is the source of truth for Tailwind and daisyUI versions.
 
 ## Files to modify
 
@@ -35,39 +36,19 @@ in the build. We update it for human reference / future npm-based tooling.
 Add the daisyUI tarball as a fixed-output fetch, extract it into a
 `node_modules/daisyui` sibling of the CSS, then run `tailwindcss` as before.
 
+See [`tailwind.md`](tailwind.md) for the complete derivation. The daisyUI part
+is:
+
 ```nix
-{ pkgs ? (import ../.obelisk/impl {}).nixpkgs }:
-let
-  nixpkgs = import ./src/nixpkgs.nix {};
-  frontendSrcFiles = ../frontend;
-
-  daisyuiVersion = "5.0.0";   # final value: latest stable 5.x at implementation time
-  daisyuiTarball = pkgs.fetchurl {
-    url = "https://registry.npmjs.org/daisyui/-/daisyui-${daisyuiVersion}.tgz";
-    sha256 = "";              # fill in via `nix-prefetch-url <url>` at implementation time
-  };
-in pkgs.stdenv.mkDerivation {
-  name = "static";
-  src = ./src;
-  buildInputs = [ pkgs.nodejs nixpkgs.tailwindcss_4 ];
-  installPhase = ''
-    mkdir -p $out/images
-    mkdir -p node_modules/daisyui
-    tar -xzf ${daisyuiTarball} -C node_modules/daisyui --strip-components=1
-
-    ln -s ${frontendSrcFiles} frontend
-
-    tailwindcss -i css/styles.css -o $out/styles.css
-
-    cp lib.js $out/lib.js
-    cp -r images/* $out/images/ 2>/dev/null || true
-  '';
-}
+daisyuiVersion = "5.5.19";
+daisyuiTarball = pkgs.fetchurl {
+  url = "https://registry.npmjs.org/daisyui/-/daisyui-${daisyuiVersion}.tgz";
+  sha256 = "1y2sdyn393d5b2gwm5krs6vc1g9y5ac3fzy5xkad4w87cv0547k0";
+};
 ```
 
-Implementation note: the sha256 is filled in by running
-`nix-prefetch-url https://registry.npmjs.org/daisyui/-/daisyui-<v>.tgz`
-once and pasting the output. If the version changes later, re-prefetch.
+and the install phase extracts it into `node_modules/daisyui` before running
+`./tailwindcss -i css/styles.css -o $out/styles.css`.
 
 ### `static/src/css/styles.css`
 
@@ -85,25 +66,6 @@ Theme choice rationale: shipping `light` as default + `dark` triggered by the
 OS `prefers-color-scheme: dark` media query gives automatic dark mode with no
 user-facing toggle to design yet. Both are first-party daisyUI themes so the
 component classes look correct out of the box.
-
-### `static/src/package.json`
-
-Add daisyUI for documentation / future tooling consistency:
-
-```json
-{
-  "name": "styles",
-  "version": "0.0.0",
-  "dependencies": {
-    "tailwindcss": "^4.1.13",
-    "daisyui": "^5.0.0"
-  }
-}
-```
-
-This is *not* read by the build (the Nix derivation handles fetching), but
-keeps the manifest truthful for editor tooling and for any future contributor
-running `npm install` outside the Nix path.
 
 ## Files to modify — frontend UI
 
@@ -156,7 +118,7 @@ seams; do not refactor structure.
    The page handlers themselves don't change otherwise — they still call
    `loginWidget` / `signupWidget` and wire the events the same way.
 
-### `frontend/src/Frontend/Auth/Widget.hs`
+### `frontend/src/Frontend/Widget/Form.hs`
 
 1. **Headings.** `el "h1"` → `elAttr "h1" ("class" =: "card-title text-2xl mb-2")`.
 
@@ -193,7 +155,7 @@ seams; do not refactor structure.
 
 - `Frontend.hs` keeps `buttonClass` (`type="button"`) for navbar / non-form
   buttons (e.g. "Log out").
-- `Frontend/Auth/Widget.hs` has `submitButtonClass` (`type="submit"`) for
+- `Frontend.Widget.Form` has `submitButtonClass` (`type="submit"`) for
   buttons inside a `<form>`. The two helpers are intentionally separate
   because the button `type` carries semantics: `"submit"` triggers form
   submission (and Enter-to-submit), `"button"` does not.
@@ -203,7 +165,7 @@ If a third call site appears for either helper, lift it to a shared module
 
 ## Verification
 
-1. `nix-prefetch-url https://registry.npmjs.org/daisyui/-/daisyui-5.0.0.tgz`
+1. `nix-prefetch-url https://registry.npmjs.org/daisyui/-/daisyui-5.5.19.tgz`
    to obtain the sha256; paste into `static/default.nix`.
 2. `ob run`. Watch for "Static assets being built…" then the dev server boot
    line.
@@ -230,7 +192,7 @@ If a third call site appears for either helper, lift it to a shared module
   daisyUI theme later when there is a brand decision to encode.
 - npm-based local dev workflow (`package-lock.json`, `node_modules/` checked
   in or generated outside Nix). The Nix derivation remains the only build
-  path; `package.json` is a manifest only.
+  path.
 - Component coverage beyond what is currently rendered. Future routes
   (Calendar, History, Settings) get styled when their content lands.
 - Form validation styling (`input-error`, inline field errors). The current

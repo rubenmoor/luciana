@@ -1,8 +1,12 @@
-# backend-plan.md
+# backend-plan-1.md
 
-Status: spec
+Status: reference — historical plan superseded by [backend-plan-2.md](backend-plan-2.md).
 
-Implementation plan to migrate the backend to the architecture defined in [backend-spec.md](backend-spec.md).
+Historical implementation plan to migrate the backend to the architecture
+defined in [backend-spec.md](backend-spec.md). Do not use this as current
+implementation guidance; the migration was completed through
+[backend-plan-2.md](backend-plan-2.md), and the source tree is now canonical
+for exact behavior.
 
 ## Current State
 
@@ -35,9 +39,11 @@ The current backend uses Obelisk's default routing dispatching to `Snap ()` func
 - *Constraint*: HTTP-level behavior must remain byte-identical.
 
 ### 5. Frontend Integration & Cleanup
-- Update `Frontend.Api` to use `servant-client-ghcjs` or similar for type-safe API calls.
-- Delete dead Obelisk-route API GADTs from `Common.Route`.
-- Remove obsolete Snap glue (`parseJsonBody`, `writeJson`, etc.).
+- Add generated Servant clients where useful, but keep the Obelisk-route API
+  GADTs in `Common.Route`; they remain the route-rendering source for
+  `Frontend.Api.apiUrl`.
+- Remove obsolete Snap glue (`parseJsonBody`, `writeJson`, etc.) where no
+  longer used.
 
 ## Verification
 

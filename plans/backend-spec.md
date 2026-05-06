@@ -8,7 +8,9 @@ Architecture and technical stack for the backend JSON API and application state 
 
 - **Framework**: [Servant](https://haskell-servant.github.io/) for type-safe API definitions and routing.
 - **Server Integration**: `servant-snap` to integrate Servant into the Obelisk/Snap pipeline.
-- **Application Monad**: `type App = ReaderT Env Servant.Handler`.
+- **Application Monad**: `type App = ReaderT Env Snap`. `servant-snap`
+  hoists this directly into Snap; Servant's `Handler` is not used as the
+  application monad.
 - **Database**: [Beam](https://haskell-beam.github.io/beam/) for type-safe, composable SQL queries and migrations.
 
 ## API Definition (`Common.Api`)
@@ -45,7 +47,7 @@ data Env = Env
   , envCookieSecure :: Bool
   }
 
-type App = ReaderT Env Handler
+type App = ReaderT Env Snap
 ```
 
 ## Custom Combinators

@@ -1,6 +1,6 @@
 # database-plan-2.md
 
-Status: spec
+Status: implemented
 
 Implementation plan for concise Postgres field naming (concise SQL columns, descriptive Haskell fields). Refer to [database-spec.md](database-spec.md) for the naming specification.
 

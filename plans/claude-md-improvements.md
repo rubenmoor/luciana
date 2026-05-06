@@ -1,14 +1,15 @@
 # claude-md-improvements.md
 
-Status: spec — proposes additions/edits to `CLAUDE.md` to reduce the tokens
-spent on every task as `plans/` and the source tree grow.
+Status: reference — historical plan; most recommendations have already been
+applied to `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`.
 
-The motivation: `CLAUDE.md` currently lists 4 plan files and tells the agent
-to "read the above files" before coding. There are now 14 plan files
-(~1.7k lines) and ~2.2k lines of source. Every task pays the cost of either
-re-reading the four named plans up front, or of discovering the rest via
-`ls`/`grep`. The improvements below shift that cost from "every session" to
-"only when the task touches the topic."
+This file remains as context for why the root instruction files use compact
+plan indexes, source maps, skip-path lists, and concrete verification
+commands. Do not treat the examples below as current file inventories.
+
+The original motivation: `CLAUDE.md` listed only a few plan files and told the
+agent to "read the above files" before coding. The improvements below shifted
+that cost from "every session" to "only when the task touches the topic."
 
 ---
 
@@ -33,11 +34,11 @@ Replace with a one-line-per-file index covering all of `plans/`:
 | obelisk.md           | reference   | `ob` CLI, thunks, build commands, config dirs |
 | dev-environment.md   | reference   | Local Postgres, env vars, direnv |
 | Haskell.md           | reference   | Prelude (relude), default extensions, cabal stanza rules |
-| best-practices.md    | reference   | Form labels, ids, Enter-to-submit |
-| routes.md            | partial     | URL → handler map; spec for unbuilt routes |
+| ui-best-practices.md | reference   | Form labels, ids, Enter-to-submit |
+| routes.md            | partial     | URL → handler map; some feature semantics incomplete |
 | schema.md            | partial     | Postgres tables; some implemented |
-| database.md          | partial     | beam/postgres setup, pool, migrations |
-| authentication.md    | implemented | Session cookie, bcrypt, rate-limit |
+| database-plan-1.md   | partial     | beam/postgres setup, pool, migrations |
+| authentication.md    | partial     | Session cookie, bcrypt, rate-limit |
 | visual-design.md     | reference   | Color tokens, layout primitives |
 | daisyui.md           | reference   | DaisyUI usage notes |
 | tailwind.md          | reference   | Tailwind build pipeline |
@@ -177,13 +178,13 @@ CLAUDE.md                                              [root]
 ├─ goal.md                                             [overview]
 ├─ architecture.md                                     [overview — layering, libs]
 ├─ obelisk.md / dev-environment.md                     [overview — build & run]
-├─ Haskell.md / best-practices.md / visual-design.md   [reference — cross-cutting conventions]
+├─ Haskell.md / ui-best-practices.md / visual-design.md [reference — cross-cutting conventions]
 │   └─ tailwind.md / daisyui.md                        [reference — narrower than visual-design.md]
 └─ feature plans                                       [leaves]
    ├─ authentication.md
    ├─ routes.md
    ├─ schema.md
-   ├─ database.md
+   ├─ database-spec.md / database-plan-1.md / database-plan-2.md
    └─ obelisk-init-guide.md
 ```
 

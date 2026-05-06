@@ -4,7 +4,7 @@ Status: reference
 
 ## Labelled form controls
 
-Every visible-label control gets explicit `for` / `id` association — never the nested-input shorthand. Use human-readable, page-scoped ids (`login-email`, `signup-password-confirm`, `period-entry-start-date`); avoid generic (`email`, `input1`) or auto-generated ones. The `labelled` helper in `frontend/src/Frontend/Auth/Widget.hs` emits `<label for=...>` from its first argument; the caller must repeat the same id in the input's initial attributes — the helper can't reach inside the opaque inner widget, and keeping both ends visible at the call site is intentional.
+Every visible-label control gets explicit `for` / `id` association — never the nested-input shorthand. Use human-readable, page-scoped ids (`login-email`, `signup-password-confirm`, `period-entry-start-date`); avoid generic (`email`, `input1`) or auto-generated ones. The `labelled` helper in `frontend/src/Frontend/Widget/Form.hs` emits `<label for=...>` from its first argument; the caller must repeat the same id in the input's initial attributes — the helper can't reach inside the opaque inner widget, and keeping both ends visible at the call site is intentional.
 
 ## Enter-to-submit on forms
 

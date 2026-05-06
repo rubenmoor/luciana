@@ -158,8 +158,9 @@ relocating before flipping `staticFiles`.
 
 ## Out of scope
 
-- `node2nix`-managed dependencies. `tailwindcss_4` from nixpkgs is enough; we
-  do not need a `package-lock.json` / `node-packages.nix` pipeline unless we
-  later add Tailwind plugins from npm.
+- `node2nix`-managed dependencies. The standalone Tailwind CLI plus
+  fixed-output npm tarballs are enough; we do not need a `package-lock.json` /
+  `node-packages.nix` pipeline unless we later add enough npm packages to make
+  manual tarball fetching painful.
 - PostCSS pipeline.
 - Production minification beyond Tailwind defaults.

@@ -13,7 +13,7 @@ layout work is required.
 
 ## Current approach
 
-[daisyUI](plans/daisyui.md) is sufficient for the visual design of Luciana at
+[daisyUI](daisyui.md) is sufficient for the visual design of Luciana at
 this stage. It provides a coherent set of component classes — navbar, cards,
 form controls, buttons, alerts — that cover every screen the app currently
 renders (login, signup, placeholder pages). Combined with Tailwind utility
@@ -135,7 +135,7 @@ Regardless of theme customisation:
   `input`, `navbar` remain identical — only the underlying CSS variables
   change.
 - **The Nix build is unaffected.** Theme tokens live in the CSS source file;
-  the derivation in [`static/default.nix`](static/default.nix) does not need
+  the derivation in [`static/default.nix`](../static/default.nix) does not need
   modification.
 - **Dark mode keeps working.** As long as a `--prefersdark` theme is declared
   in the `@plugin` block, the OS-level toggle continues to function.
@@ -144,7 +144,7 @@ Regardless of theme customisation:
 
 - A brand palette or logo is chosen → override `--color-primary` and friends.
 - The period-status colours (green / yellow / red from the
-  [goal](plans/goal.md)) need to map to semantic tokens → define `--color-success`,
+  [goal](goal.md)) need to map to semantic tokens → define `--color-success`,
   `--color-warning`, `--color-error` to match.
 - A user-facing theme picker is desired → add more theme names to the
   `@plugin` block and wire a `data-theme` attribute toggle in the frontend.

@@ -1,8 +1,8 @@
 # routes.md
 
-Status: partial — all route GADTs and the frontend API-URL helper are
-implemented; some backend handlers (period, notifications, push) are still
-unbuilt.
+Status: partial — all route GADTs, `Common.Api`, backend handler wiring, and
+the frontend API helper are implemented. Some feature semantics behind those
+routes are still incomplete; source is canonical for exact behavior.
 
 URL routing — frontend pages and JSON API both — lives in
 [`common/src/Common/Route.hs`](../common/src/Common/Route.hs), so the backend
@@ -14,9 +14,8 @@ Library mechanics (`Encoder`, `R`, `PageName`, `SegmentResult`,
 [`obsidiansystems/obelisk/docs/introduction.md`](https://github.com/obsidiansystems/obelisk/blob/master/docs/introduction.md).
 Read it once if you need a refresher; do not restate it here.
 
-`obelisk-route` encodes only path + query. HTTP method, headers, and body
-are handled in handlers (Snap + `aeson`) — so handler modules dispatch on
-method internally.
+`obelisk-route` encodes only path + query. HTTP method, headers, and body are
+described by `Common.Api` for `/api/*` and implemented through Servant/Snap.
 
 Module layout for the code that *implements* a route is in
 [`route-modules.md`](route-modules.md).
@@ -101,9 +100,9 @@ segment — `/entries` and `/entries/:id` cannot share a `PeriodRoute`.
 | `PushRoute_Unsubscribe` | `POST /api/push/unsubscribe` | `{ endpoint }` | `204` |
 
 `timezone` on `subscribe` is the device's
-`Intl.DateTimeFormat().resolvedOptions().timeZone`, also written through
-to `users.timezone` on every login (see
-[`authentication.md`](authentication.md)).
+`Intl.DateTimeFormat().resolvedOptions().timeZone`. The planned behavior is
+to refresh `users.timezone` from login and subscribe flows; check the current
+handler source before relying on that behavior.
 
 ---
 
@@ -171,8 +170,7 @@ postJson
 
 ### The `apiUrl` helper
 
-Single home: `frontend/src/Frontend/Api.hs` (new module — not yet
-created).
+Single home: [`frontend/src/Frontend/Api.hs`](../frontend/src/Frontend/Api.hs).
 
 ```haskell
 apiUrl :: R BackendRoute -> Text

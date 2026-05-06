@@ -193,11 +193,9 @@ Implementation: each toast holds an internal "open" `Dynamic t Bool`
 fed by clicks on its `<summary>`. The dismiss event is a `delay`
 gated on `not open`, plus the close button's click event.
 
-If the map ever exceeds, say, 5 entries, drop the oldest. Cheap
-insurance against floods. Toasts with details opened are exempt from
-this drop — explicit user attention beats LRU. **Deferred**: the v1
-implementation does not enforce a cap; add it the first time we see
-a flood in practice.
+If the map ever exceeds 5 entries, drop the oldest visible toasts. Cheap
+insurance against floods. The current implementation enforces this cap in
+`Frontend.Toast.renderToasts`.
 
 The text inside each `<div class="alert …">` is `translateToast loc
 msg` (see § Internationalisation), where `loc` is sampled from the

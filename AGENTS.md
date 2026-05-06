@@ -19,13 +19,16 @@ Project docs live in `plans/`. Read only the plan files relevant to the task.
 | [plans/visual-design.md](plans/visual-design.md) | reference | Color tokens, layout primitives |
 | [plans/tailwind.md](plans/tailwind.md) | reference | Tailwind build pipeline |
 | [plans/daisyui.md](plans/daisyui.md) | reference | DaisyUI usage notes |
+| [plans/obelisk-init-guide.md](plans/obelisk-init-guide.md) | reference | Bootstrap notes from initial scaffold |
 | [plans/routes.md](plans/routes.md) | partial | URL → handler map |
 | [plans/schema.md](plans/schema.md) | partial | Postgres tables |
-| [plans/database.md](plans/database.md) | partial | beam/postgres setup, pool, migrations |
-| [plans/authentication.md](plans/authentication.md) | implemented | Session cookie, bcrypt, rate-limit |
+| [plans/database-spec.md](plans/database-spec.md) | spec | Infrastructure, env, and naming conventions |
+| [plans/database-plan-1.md](plans/database-plan-1.md) | partial | beam/postgres setup, pool, migrations |
+| [plans/database-plan-2.md](plans/database-plan-2.md) | implemented | Concise field naming implementation |
+| [plans/authentication.md](plans/authentication.md) | partial | Session cookie, bcrypt, rate-limit; source is canonical for implemented behavior |
 | [plans/backend-spec.md](plans/backend-spec.md) | spec | ReaderT app monad + Snap middleware |
-| [plans/backend-plan-1.md](plans/backend-plan-1.md) | spec | Servant migration plan from scratch |
-| [plans/backend-plan-2.md](plans/backend-plan-2.md) | spec | Servant migration plan from current WIP |
+| [plans/backend-plan-1.md](plans/backend-plan-1.md) | reference | Historical Servant migration plan from scratch; superseded by backend-plan-2 |
+| [plans/backend-plan-2.md](plans/backend-plan-2.md) | implemented | Servant migration plan from current WIP |
 | [plans/toasts.md](plans/toasts.md) | implemented | Toast flow |
 
 ## Codex workflow rules

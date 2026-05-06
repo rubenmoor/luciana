@@ -20,15 +20,15 @@ Refer to these files for context on specific areas. Each plan starts with a `Sta
 | [tailwind.md](plans/tailwind.md) | reference | Tailwind build pipeline |
 | [daisyui.md](plans/daisyui.md) | reference | DaisyUI usage notes |
 | [obelisk-init-guide.md](plans/obelisk-init-guide.md) | reference | Bootstrap notes from initial scaffold |
-| [routes.md](plans/routes.md) | partial | URL → handler map; spec for unbuilt routes |
+| [routes.md](plans/routes.md) | partial | URL → handler map; handler wiring exists, some feature semantics incomplete |
 | [schema.md](plans/schema.md) | partial | Postgres tables; some implemented |
 | [database-spec.md](plans/database-spec.md) | spec | Infrastructure, env, and naming conventions |
 | [database-plan-1.md](plans/database-plan-1.md) | partial | beam/postgres setup, pool, migrations |
-| [database-plan-2.md](plans/database-plan-2.md) | spec | Concise field naming implementation |
-| [authentication.md](plans/authentication.md) | implemented | Session cookie, bcrypt, rate-limit |
-| [backend-spec.md](plans/backend-spec.md) | spec | `Env` + `ReaderT` app monad; Snap middleware to keep handlers lean |
-| [backend-plan-1.md](plans/backend-plan-1.md) | spec | Steps to migrate backend to Servant from scratch |
-| [backend-plan-2.md](plans/backend-plan-2.md) | spec | Steps to finish backend migration from current WIP state |
+| [database-plan-2.md](plans/database-plan-2.md) | implemented | Concise field naming implementation |
+| [authentication.md](plans/authentication.md) | partial | Session cookie, bcrypt, rate-limit; source is canonical for implemented behavior |
+| [backend-spec.md](plans/backend-spec.md) | spec | `Env` + `ReaderT Env Snap` app monad; Snap middleware to keep handlers lean |
+| [backend-plan-1.md](plans/backend-plan-1.md) | reference | Historical Servant migration plan from scratch; superseded by backend-plan-2 |
+| [backend-plan-2.md](plans/backend-plan-2.md) | implemented | Steps used to finish backend migration from WIP state |
 | [toasts.md](plans/toasts.md) | implemented | Transient success/error messages (DaisyUI toasts, EventWriter) |
 
 ## Source Map
