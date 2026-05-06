@@ -22,8 +22,11 @@ import Common.Auth
   , unUsername
   )
 import Common.I18n (Locale)
-import qualified Crypto.BCrypt as BCrypt (hashPassword)
-import qualified Crypto.Random.Entropy as Entropy (getEntropy)
+import qualified Crypto.BCrypt as BCrypt
+  ( hashPasswordUsingPolicy
+  , preferredHashCost
+  , slowerBcryptHashingPolicy
+  )
 import Data.Time (getCurrentTime)
 import Database.Beam (Table (primaryKey), default_, insertExpressions, val_)
 import Database.Beam.Postgres ()
@@ -64,8 +67,9 @@ handler _bucket req = do
 
 hashPassword :: Text -> IO (Maybe Text)
 hashPassword pw = do
-  salt <- Entropy.getEntropy 16
-  let m = BCrypt.hashPassword (encodeUtf8 pw) salt
+  m <- BCrypt.hashPasswordUsingPolicy
+    BCrypt.slowerBcryptHashingPolicy { BCrypt.preferredHashCost = 12 }
+    (encodeUtf8 pw)
   pure (decodeUtf8 <$> m)
 
 
